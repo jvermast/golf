@@ -76,7 +76,7 @@ export function calcDay(course, players, scores) {
     });
   });
 
-  // SKINS - Gross par-or-better ALWAYS wins, then best NET, ties carry
+  // SKINS - Gross par-or-better wins if it beats or ties the best NET score
   let carry = 0;
   course.holes.forEach(hole => {
     const hs = players.map((p, pi) => {
@@ -85,21 +85,24 @@ export function calcDay(course, players, scores) {
       return { pi, g, n: netScore(g, p.handicap, hole.hcp), gl: grossLabel(g - hole.par) };
     });
 
-    const gw = hs.filter(s => s.gl && s.g < 999);
+    const v = hs.filter(s => s.g < 999);
     let w = null;
 
-    if (gw.length > 0) {
-      // Gross par-or-better exists — best gross among them wins
-      const b = Math.min(...gw.map(s => s.g));
-      const bs = gw.filter(s => s.g === b);
-      if (bs.length === 1) w = bs[0].pi;
-      // Tied gross par-or-better = carry over
-    } else {
-      // No gross par-or-better — best NET wins
-      const v = hs.filter(s => s.g < 999);
-      if (v.length > 0) {
-        const b = Math.min(...v.map(s => s.n));
-        const bs = v.filter(s => s.n === b);
+    if (v.length > 0) {
+      // Find best net score
+      const bestNet = Math.min(...v.map(s => s.n));
+      
+      // Check if any gross par-or-better beats or ties the best net
+      const gw = hs.filter(s => s.gl && s.g < 999 && s.g <= bestNet);
+      
+      if (gw.length > 0) {
+        // Best gross among qualifying gross scores wins
+        const b = Math.min(...gw.map(s => s.g));
+        const bs = gw.filter(s => s.g === b);
+        if (bs.length === 1) w = bs[0].pi;
+      } else {
+        // Best NET wins
+        const bs = v.filter(s => s.n === bestNet);
         if (bs.length === 1) w = bs[0].pi;
       }
     }

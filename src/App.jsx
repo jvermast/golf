@@ -194,9 +194,10 @@ export default function App() {
       const hs = players.map(p => { const g=ds[p.name]?.[hole.number]||0; if(!g)return{name:p.name,g:0,n:0,gl:null}; const n=netScore(g,p.handicap,hole.hcp); return{name:p.name,g,n,gl:grossLabel(g-hole.par)}; });
       const v = hs.filter(s => s.g > 0); let w = null, m = null;
       if (v.length > 0) {
-        const gw = hs.filter(s => s.gl && s.g > 0);
+        const bestNet = Math.min(...v.map(s=>s.n));
+        const gw = hs.filter(s => s.gl && s.g > 0 && s.g <= bestNet);
         if (gw.length > 0) { const b=Math.min(...gw.map(s=>s.g)); const bs=gw.filter(s=>s.g===b); if(bs.length===1){w=bs[0].name;m=`Gross ${bs[0].gl}`;} }
-        else { const bn=Math.min(...v.map(s=>s.n)); const bs=v.filter(s=>s.n===bn); if(bs.length===1){w=bs[0].name;m="Best NET";} }
+        else { const bs=v.filter(s=>s.n===bestNet); if(bs.length===1){w=bs[0].name;m="Best NET";} }
       }
       const worth = w ? 1 + carry : 0; rows.push({hole:hole.number,par:hole.par,scores:hs,w,m,carry,worth}); if(w)carry=0; else if(v.length>0)carry++;
     });
