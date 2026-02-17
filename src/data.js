@@ -76,34 +76,40 @@ export function calcDay(course, players, scores) {
     });
   });
 
-  // SKINS - Gross par-or-better wins if it beats or ties the best NET score
+  // SKINS - Gross birdie/eagle beats net birdie/eagle, but gross par does NOT beat net par
   let carry = 0;
   course.holes.forEach(hole => {
     const hs = players.map((p, pi) => {
       const g = scores?.[p.name]?.[hole.number] || 0;
-      if (!g) return { pi, g: 999, n: 999, gl: null };
-      return { pi, g, n: netScore(g, p.handicap, hole.hcp), gl: grossLabel(g - hole.par) };
+      if (!g) return { pi, g: 999, n: 999, nvp: 999 };
+      const n = netScore(g, p.handicap, hole.hcp);
+      const nvp = n - hole.par;
+      return { pi, g, n, nvp };
     });
 
     const v = hs.filter(s => s.g < 999);
     let w = null;
 
     if (v.length > 0) {
-      // Find best net score
-      const bestNet = Math.min(...v.map(s => s.n));
+      // Find best net result
+      const bestNvp = Math.min(...v.map(s => s.nvp));
       
-      // Check if any gross par-or-better beats or ties the best net
-      const gw = hs.filter(s => s.gl && s.g < 999 && s.g <= bestNet);
-      
-      if (gw.length > 0) {
-        // Best gross among qualifying gross scores wins
-        const b = Math.min(...gw.map(s => s.g));
-        const bs = gw.filter(s => s.g === b);
-        if (bs.length === 1) w = bs[0].pi;
+      // If best net is birdie or better (nvp < 0), check for matching gross
+      if (bestNvp < 0) {
+        const bestNetScores = v.filter(s => s.nvp === bestNvp);
+        // Check if anyone has matching gross score (same net result achieved with gross)
+        const matchingGross = bestNetScores.filter(s => (s.g - hole.par) === bestNvp);
+        
+        if (matchingGross.length === 1) {
+          w = matchingGross[0].pi; // Gross wins
+        } else if (matchingGross.length === 0 && bestNetScores.length === 1) {
+          w = bestNetScores[0].pi; // Net wins (no matching gross)
+        }
+        // else tie = carry
       } else {
-        // Best NET wins
-        const bs = v.filter(s => s.n === bestNet);
-        if (bs.length === 1) w = bs[0].pi;
+        // Best is par or worse - pure net scoring, no gross priority
+        const bestNetScores = v.filter(s => s.nvp === bestNvp);
+        if (bestNetScores.length === 1) w = bestNetScores[0].pi;
       }
     }
 

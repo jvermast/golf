@@ -191,13 +191,19 @@ export default function App() {
   const SkinsTbl = ({course, players, ds}) => {
     let carry = 0; const rows = [];
     course.holes.forEach(hole => {
-      const hs = players.map(p => { const g=ds[p.name]?.[hole.number]||0; if(!g)return{name:p.name,g:0,n:0,gl:null}; const n=netScore(g,p.handicap,hole.hcp); return{name:p.name,g,n,gl:grossLabel(g-hole.par)}; });
+      const hs = players.map(p => { const g=ds[p.name]?.[hole.number]||0; if(!g)return{name:p.name,g:0,n:0,nvp:999,gl:null}; const n=netScore(g,p.handicap,hole.hcp); const nvp=n-hole.par; return{name:p.name,g,n,nvp,gl:grossLabel(g-hole.par)}; });
       const v = hs.filter(s => s.g > 0); let w = null, m = null;
       if (v.length > 0) {
-        const bestNet = Math.min(...v.map(s=>s.n));
-        const gw = hs.filter(s => s.gl && s.g > 0 && s.g <= bestNet);
-        if (gw.length > 0) { const b=Math.min(...gw.map(s=>s.g)); const bs=gw.filter(s=>s.g===b); if(bs.length===1){w=bs[0].name;m=`Gross ${bs[0].gl}`;} }
-        else { const bs=v.filter(s=>s.n===bestNet); if(bs.length===1){w=bs[0].name;m="Best NET";} }
+        const bestNvp = Math.min(...v.map(s=>s.nvp));
+        if (bestNvp < 0) {
+          const bestNetScores = v.filter(s => s.nvp === bestNvp);
+          const matchingGross = bestNetScores.filter(s => (s.g - hole.par) === bestNvp);
+          if (matchingGross.length === 1) { w=matchingGross[0].name; m=`Gross ${matchingGross[0].gl}`; }
+          else if (matchingGross.length === 0 && bestNetScores.length === 1) { w=bestNetScores[0].name; m="Best NET"; }
+        } else {
+          const bestNetScores = v.filter(s => s.nvp === bestNvp);
+          if (bestNetScores.length === 1) { w=bestNetScores[0].name; m="Best NET"; }
+        }
       }
       const worth = w ? 1 + carry : 0; rows.push({hole:hole.number,par:hole.par,scores:hs,w,m,carry,worth}); if(w)carry=0; else if(v.length>0)carry++;
     });
