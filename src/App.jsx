@@ -216,7 +216,7 @@ export default function App() {
       <tbody>{rows.map(row=><tr key={row.hole} style={{background:row.w?C.skin+"06":"transparent"}}>
         <td style={{padding:"5px 6px",fontWeight:800,fontSize:"12px",color:C.dim,borderBottom:`1px solid ${C.border}10`}}>{row.hole} <span style={{fontSize:"9px",color:C.muted}}>P{row.par}</span></td>
         {row.scores.map(sc=><td key={sc.name} style={{padding:"5px 4px",textAlign:"center",fontFamily:"'JetBrains Mono',monospace",fontSize:"12px",fontWeight:sc.name===row.w?900:400,color:sc.name===row.w?C.skin:C.dim,borderBottom:`1px solid ${C.border}10`}}>
-          {sc.g>0?<>{sc.g}{sc.gl&&<span style={{fontSize:"8px",marginLeft:"1px",color:C.accent}}>★</span>}</>:"–"}
+          {sc.g>0?<div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:"1px"}}><div>{sc.g}</div>{sc.n!==sc.g&&<div style={{fontSize:"9px",color:C.muted,fontWeight:600}}>{sc.n}</div>}</div>:"–"}
         </td>)}
         <td style={{padding:"5px 4px",textAlign:"center",fontSize:"11px",fontWeight:700,color:row.w?C.skin:C.muted,borderBottom:`1px solid ${C.border}10`}}>
           {row.w?<><div>{row.w}</div><div style={{fontSize:"8px",color:C.muted}}>{row.m}</div></>:row.scores.some(s=>s.g>0)?<span style={{color:C.eagle}}>Carry →</span>:"–"}
