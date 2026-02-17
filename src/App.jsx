@@ -312,8 +312,8 @@ export default function App() {
   // ═══════════════════════════════════════════════════════════════════════════
   // SHELL
   // ═══════════════════════════════════════════════════════════════════════════
-  return <div style={{fontFamily:"'DM Sans','Helvetica Neue',sans-serif",color:C.text,minHeight:"100vh",background:`linear-gradient(170deg,${C.bg} 0%,#040a06 50%,#0a150e 100%)`}}>
-    <div style={{background:"rgba(7,15,10,0.88)",backdropFilter:"blur(20px)",borderBottom:`1px solid ${C.border}`,padding:"10px 14px",position:"sticky",top:0,zIndex:100,display:"flex",alignItems:"center",justifyContent:"space-between",gap:"6px"}}>
+  return <div style={{fontFamily:"'DM Sans','Helvetica Neue',sans-serif",color:C.text,minHeight:"100vh",background:C.bg}}>
+    <div style={{background:C.bg2,backdropFilter:"blur(20px)",borderBottom:`1px solid ${C.border}`,padding:"10px 14px",position:"sticky",top:0,zIndex:100,display:"flex",alignItems:"center",justifyContent:"space-between",gap:"6px"}}>
       <div style={{display:"flex",alignItems:"center",gap:"7px",fontWeight:800,fontSize:"14px",color:C.accent,whiteSpace:"nowrap",letterSpacing:"-0.02em"}}>⛳ Myrtle '26</div>
       <div style={{display:"flex",gap:"2px",background:C.bg2,borderRadius:"10px",padding:"3px",border:`1px solid ${C.border}`}}>
         {[{k:"leaderboard",l:"🏆 Board"},{k:"scorecard",l:"📋 Scores"},{k:"setup",l:"⚙️"}].map(t=><button key={t.k} onClick={()=>setView(t.k)} style={{padding:"5px 12px",borderRadius:"8px",border:"none",fontSize:"12px",fontWeight:700,cursor:"pointer",fontFamily:"inherit",background:view===t.k?C.accentDim:"transparent",color:view===t.k?C.accentBr:C.dim,whiteSpace:"nowrap"}}>{t.l}</button>)}
