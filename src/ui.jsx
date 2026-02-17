@@ -1,10 +1,10 @@
 export const C = {
-  bg: "#0a1628", bg2: "#112240", bg3: "#1a365d", border: "#2d3748",
-  accent: "#60a5fa", accentDim: "#1e3a8a", accentBr: "#93c5fd",
-  gold: "#fbbf24", silver: "#94a3b8", bronze: "#f97316",
-  text: "#f1f5f9", dim: "#94a3b8", muted: "#64748b",
-  eagle: "#f59e0b", birdie: "#60a5fa", par: "#10b981",
-  bogey: "#f87171", dbl: "#dc2626", skin: "#c084fc",
+  bg: "#ffffff", bg2: "#f8fafc", bg3: "#f1f5f9", border: "#e2e8f0",
+  accent: "#2563eb", accentDim: "#1e40af", accentBr: "#60a5fa",
+  gold: "#eab308", silver: "#71717a", bronze: "#ea580c",
+  text: "#0f172a", dim: "#475569", muted: "#64748b",
+  eagle: "#f59e0b", birdie: "#3b82f6", par: "#10b981",
+  bogey: "#ef4444", dbl: "#dc2626", skin: "#a855f7",
 };
 
 export const medal = [C.gold, C.silver, C.bronze];
