@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { COURSES, DEFAULT_PLAYERS, calcDay, getStrokes, netScore, grossLabel } from "./data";
 import { useFirestoreSync } from "./useFirestoreSync";
 import { isConfigured } from "./firebase";
