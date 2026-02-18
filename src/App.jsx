@@ -14,6 +14,7 @@ export default function App() {
   const [players, setPlayers] = useState(DEFAULT_PLAYERS);
   const [scores, setScores] = useState({});
   const [nine, setNine] = useState("front");
+  const [currentHole, setCurrentHole] = useState(0);
   const courses = COURSES;
 
   const fbActive = isConfigured();
@@ -140,9 +141,10 @@ export default function App() {
   // ═══════════════════════════════════════════════════════════════════════════
   const Scores = () => {
     const c = courses[day], ds = scores[day] || {}, dr = allR[day];
-    const [currentHole, setCurrentHole] = useState(0); // 0-17 for all 18 holes
+    const [viewMode, setViewMode] = useState("entry"); // "entry" or "sheet"
     const hole = c.holes[currentHole];
     const holePar = hole.par;
+    const dh = viewMode === "sheet" ? (nine === "front" ? c.holes.slice(0, 9) : c.holes.slice(9, 18)) : [];
     
     return <div>
       <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:"14px"}}>
@@ -151,7 +153,14 @@ export default function App() {
         <button onClick={()=>day<5&&setDay(day+1)} style={{background:C.bg2,border:`1px solid ${C.border}`,borderRadius:"8px",padding:"7px",color:C.dim,cursor:"pointer",opacity:day===5?0.3:1}}><Chev dir="right"/></button>
       </div>
       
-      {/* Hole Navigation */}
+      {/* View Mode Toggle */}
+      <div style={{display:"flex",justifyContent:"center",marginBottom:"14px"}}><div style={{display:"flex",gap:"2px",background:C.bg2,borderRadius:"10px",padding:"3px",border:`1px solid ${C.border}`}}>
+        <button onClick={()=>setViewMode("entry")} style={{padding:"6px 16px",borderRadius:"8px",border:"none",fontSize:"12px",fontWeight:700,cursor:"pointer",fontFamily:"inherit",background:viewMode==="entry"?C.accentDim:"transparent",color:viewMode==="entry"?C.accentBr:C.dim}}>Score Entry</button>
+        <button onClick={()=>setViewMode("sheet")} style={{padding:"6px 16px",borderRadius:"8px",border:"none",fontSize:"12px",fontWeight:700,cursor:"pointer",fontFamily:"inherit",background:viewMode==="sheet"?C.accentDim:"transparent",color:viewMode==="sheet"?C.accentBr:C.dim}}>Full Sheet</button>
+      </div></div>
+      
+      {viewMode === "entry" ? <>
+      {/* Hole-by-Hole Entry */}
       <div style={{background:C.bg2,border:`1px solid ${C.border}`,borderRadius:"14px",padding:"14px",marginBottom:"14px"}}>
         <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:"14px"}}>
           <button onClick={()=>currentHole>0&&setCurrentHole(currentHole-1)} disabled={currentHole===0} style={{background:C.accent,border:"none",borderRadius:"8px",padding:"10px 16px",color:"#fff",fontSize:"14px",fontWeight:700,cursor:"pointer",opacity:currentHole===0?0.3:1}}>← Prev</button>
@@ -183,16 +192,51 @@ export default function App() {
                   <div style={{fontSize:"20px",fontWeight:900,fontFamily:"'JetBrains Mono',monospace",color:det?cc.bd:C.dim}}>{net}</div>
                 </div>}
               </div>
-              <div style={{display:"grid",gridTemplateColumns:"repeat(8,1fr)",gap:"6px"}}>
-                {[1,2,3,4,5,6,7,8].map(score=><button key={score} onClick={()=>setScore(day,player.name,hole.number,score)} style={{background:g===score?C.accent:"transparent",border:`2px solid ${g===score?C.accent:C.border}`,borderRadius:"8px",padding:"12px",color:g===score?"#fff":C.text,fontSize:"16px",fontWeight:800,cursor:"pointer",fontFamily:"'JetBrains Mono',monospace"}}>{score}</button>)}
+              <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:"8px"}}>
+                {[1,2,3,4,5,6,7,8].map(score=><button key={score} onClick={()=>setScore(day,player.name,hole.number,score)} style={{background:g===score?C.accent:"transparent",border:`2px solid ${g===score?C.accent:C.border}`,borderRadius:"8px",padding:"14px",color:g===score?"#fff":C.text,fontSize:"18px",fontWeight:800,cursor:"pointer",fontFamily:"'JetBrains Mono',monospace",minWidth:0}}>{score}</button>)}
               </div>
-              <div style={{display:"flex",gap:"6px",marginTop:"6px"}}>
-                {[9,10].map(score=><button key={score} onClick={()=>setScore(day,player.name,hole.number,score)} style={{flex:1,background:g===score?C.accent:"transparent",border:`2px solid ${g===score?C.accent:C.border}`,borderRadius:"8px",padding:"12px",color:g===score?"#fff":C.text,fontSize:"16px",fontWeight:800,cursor:"pointer",fontFamily:"'JetBrains Mono',monospace"}}>{score}</button>)}
-                <button onClick={()=>setScore(day,player.name,hole.number,"")} style={{flex:1,background:C.bogey+"15",border:`2px solid ${C.bogey}40`,borderRadius:"8px",padding:"12px",color:C.bogey,fontSize:"14px",fontWeight:700,cursor:"pointer"}}>Clear</button>
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:"8px",marginTop:"8px"}}>
+                {[9,10].map(score=><button key={score} onClick={()=>setScore(day,player.name,hole.number,score)} style={{background:g===score?C.accent:"transparent",border:`2px solid ${g===score?C.accent:C.border}`,borderRadius:"8px",padding:"14px",color:g===score?"#fff":C.text,fontSize:"18px",fontWeight:800,cursor:"pointer",fontFamily:"'JetBrains Mono',monospace",minWidth:0}}>{score}</button>)}
+                <button onClick={()=>setScore(day,player.name,hole.number,"")} style={{background:C.bogey+"15",border:`2px solid ${C.bogey}40`,borderRadius:"8px",padding:"14px",color:C.bogey,fontSize:"14px",fontWeight:700,cursor:"pointer",minWidth:0}}>Clear</button>
               </div>
             </div>})}
         </div>
       </div>
+      </> : <>
+      {/* Full Scoresheet View */}
+      <div style={{display:"flex",justifyContent:"center",marginBottom:"14px"}}><div style={{display:"flex",gap:"2px",background:C.bg2,borderRadius:"10px",padding:"3px",border:`1px solid ${C.border}`}}>
+        {["front","back"].map(r=><button key={r} onClick={()=>setNine(r)} style={{padding:"6px 16px",borderRadius:"8px",border:"none",fontSize:"12px",fontWeight:700,cursor:"pointer",fontFamily:"inherit",background:nine===r?C.accentDim:"transparent",color:nine===r?C.accentBr:C.dim}}>{r==="front"?"Front 9":"Back 9"}</button>)}
+      </div></div>
+      <div style={{background:C.bg2,border:`1px solid ${C.border}`,borderRadius:"14px",padding:"10px",marginBottom:"14px",overflowX:"auto"}}>
+        <table style={{width:"100%",borderCollapse:"collapse",minWidth:"580px"}}>
+          <thead>
+            <tr><th style={{padding:"6px",fontSize:"10px",fontWeight:800,color:C.muted,textAlign:"left",borderBottom:`1px solid ${C.border}`,position:"sticky",left:0,background:C.bg2,zIndex:2,minWidth:"70px"}}>Hole</th>
+              {dh.map(h=><th key={h.number} style={{padding:"6px 3px",fontSize:"12px",fontWeight:800,color:C.dim,textAlign:"center",borderBottom:`1px solid ${C.border}`,minWidth:"40px"}}>{h.number}</th>)}
+              <th style={{padding:"6px",fontSize:"10px",fontWeight:800,color:C.accent,textAlign:"center",borderBottom:`1px solid ${C.border}`,minWidth:"45px"}}>{nine==="front"?"OUT":"IN"}</th>
+            </tr>
+            <tr><td style={{padding:"4px 6px",fontSize:"10px",fontWeight:700,color:C.muted,borderBottom:`1px solid ${C.border}20`,position:"sticky",left:0,background:C.bg2,zIndex:2}}>Par</td>
+              {dh.map(h=><td key={h.number} style={{padding:"4px",fontSize:"12px",color:C.dim,fontWeight:700,textAlign:"center",borderBottom:`1px solid ${C.border}20`}}>{h.par}</td>)}
+              <td style={{padding:"4px",fontSize:"12px",fontWeight:800,color:C.dim,textAlign:"center",borderBottom:`1px solid ${C.border}20`}}>{dh.reduce((s,h)=>s+h.par,0)}</td>
+            </tr>
+            <tr><td style={{padding:"4px 6px",fontSize:"10px",fontWeight:700,color:C.muted,borderBottom:`1px solid ${C.border}`,position:"sticky",left:0,background:C.bg2,zIndex:2}}>HCP</td>
+              {dh.map(h=><td key={h.number} style={{padding:"4px",fontSize:"10px",color:C.muted,textAlign:"center",borderBottom:`1px solid ${C.border}`}}>{h.hcp}</td>)}
+              <td style={{borderBottom:`1px solid ${C.border}`}}></td>
+            </tr>
+          </thead>
+          <tbody>{players.map(player=>{const pr=dr.find(r=>r.player===player.name)||{};const ng=dh.reduce((s,h)=>s+(ds[player.name]?.[h.number]||0),0);
+            return <tr key={player.name}>
+              <td style={{padding:"6px",textAlign:"left",borderBottom:`1px solid ${C.border}15`,position:"sticky",left:0,background:C.bg2,zIndex:2}}><div style={{fontWeight:800,fontSize:"13px",lineHeight:1.1}}>{player.name}</div><div style={{fontSize:"9px",color:C.muted,fontWeight:600}}>HCP {player.handicap}</div></td>
+              {dh.map(hole=>{const g=ds[player.name]?.[hole.number]||"";const det=pr.holes?.find(d=>d.hole===hole.number);const str=getStrokes(player.handicap,hole.hcp);const cc=det?scC(det.nvp):{bg:"transparent",bd:C.border};
+                return <td key={hole.number} style={{padding:"3px 1px",textAlign:"center",borderBottom:`1px solid ${C.border}15`,position:"relative"}}>
+                  {str>0&&<div style={{position:"absolute",top:"2px",right:"3px",width:"4px",height:"4px",borderRadius:"50%",background:C.accent}}/>}
+                  <input type="number" min="1" max="15" value={g} onChange={e=>setScore(day,player.name,hole.number,e.target.value)} onFocus={e=>e.target.select()}
+                    style={{background:cc.bg,border:`1.5px solid ${cc.bd}`,borderRadius:"6px",padding:"4px 2px",color:C.text,fontSize:"13px",fontFamily:"'JetBrains Mono',monospace",outline:"none",width:"36px",textAlign:"center",fontWeight:700}}/>
+                </td>})}
+              <td style={{padding:"6px",textAlign:"center",fontWeight:900,fontSize:"15px",fontFamily:"'JetBrains Mono',monospace",color:C.accent,borderBottom:`1px solid ${C.border}15`}}>{ng||"–"}</td>
+            </tr>})}</tbody>
+        </table>
+      </div>
+      </>}
       {/* Day Points */}
       <div style={{background:C.bg2,border:`1px solid ${C.border}`,borderRadius:"14px",padding:"14px",marginBottom:"14px",overflowX:"auto"}}>
         <div style={{fontSize:"10px",fontWeight:800,textTransform:"uppercase",letterSpacing:"0.15em",color:C.muted,marginBottom:"10px"}}>Day {day+1} Points</div>
