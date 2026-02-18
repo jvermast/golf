@@ -203,42 +203,48 @@ export default function App() {
         </div>
       </div>
       </> : <>
-      {/* Full Scoresheet View - Vertical Layout */}
-      <div style={{display:"flex",flexDirection:"column",gap:"10px"}}>
-        {c.holes.map(hole=>{
-          const holePar = hole.par;
-          return <div key={hole.number} style={{background:C.bg2,border:`1px solid ${C.border}`,borderRadius:"12px",padding:"12px"}}>
-            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"10px",paddingBottom:"8px",borderBottom:`1px solid ${C.border}`}}>
-              <div>
-                <div style={{fontSize:"20px",fontWeight:900,color:C.accent,fontFamily:"'JetBrains Mono',monospace"}}>HOLE {hole.number}</div>
-                <div style={{fontSize:"12px",color:C.dim,fontWeight:600}}>Par {holePar} · Handicap {hole.hcp}</div>
-              </div>
-            </div>
-            <div style={{display:"flex",flexDirection:"column",gap:"8px"}}>
-              {players.map(player=>{
+      {/* Full Scoresheet View - Traditional Golf Scorecard */}
+      <div style={{overflowX:"auto",paddingBottom:"16px"}}>
+        <div style={{display:"grid",gridTemplateColumns:"80px repeat(18,50px) 60px 60px",gap:"0",minWidth:"fit-content",background:C.bg2,border:`2px solid ${C.border}`,borderRadius:"8px",overflow:"hidden"}}>
+          {/* Header Row */}
+          <div style={{background:C.accent,padding:"12px 8px",fontSize:"11px",fontWeight:800,color:"white",borderRight:`1px solid ${C.border}`,display:"flex",alignItems:"center",justifyContent:"center"}}>PLAYER</div>
+          {c.holes.map(hole=><div key={hole.number} style={{background:C.accent,padding:"12px 4px",fontSize:"11px",fontWeight:800,color:"white",borderRight:`1px solid ${C.border}`,textAlign:"center",display:"flex",flexDirection:"column",justifyContent:"center",alignItems:"center"}}>
+            <div>{hole.number}</div>
+            <div style={{fontSize:"9px",opacity:0.8,marginTop:"2px"}}>Par{hole.par}</div>
+          </div>)}
+          <div style={{background:C.accent,padding:"12px 4px",fontSize:"11px",fontWeight:800,color:"white",borderRight:`1px solid ${C.border}`,textAlign:"center",display:"flex",alignItems:"center",justifyContent:"center"}}>OUT</div>
+          <div style={{background:C.accent,padding:"12px 4px",fontSize:"11px",fontWeight:800,color:"white",textAlign:"center",display:"flex",alignItems:"center",justifyContent:"center"}}>IN</div>
+          
+          {/* Player Rows */}
+          {players.map((player,pIdx)=>{
+            const pr = dr.find(r=>r.player===player.name)||{};
+            const out9 = c.holes.slice(0,9).reduce((sum,h)=>{
+              const g = ds[player.name]?.[h.number];
+              return sum + (g||0);
+            },0);
+            const in9 = c.holes.slice(9,18).reduce((sum,h)=>{
+              const g = ds[player.name]?.[h.number];
+              return sum + (g||0);
+            },0);
+            
+            return <React.Fragment key={player.name}>
+              <div style={{background:pIdx%2===0?C.bg:C.bg2,padding:"12px 8px",fontSize:"12px",fontWeight:800,color:C.text,borderRight:`1px solid ${C.border}`,borderTop:`1px solid ${C.border}`,display:"flex",alignItems:"center"}}>{player.name}</div>
+              {c.holes.map(hole=>{
                 const g = ds[player.name]?.[hole.number]||"";
-                const pr = dr.find(r=>r.player===player.name)||{};
                 const det = pr.holes?.find(d=>d.hole===hole.number);
                 const str = getStrokes(player.handicap,hole.hcp);
                 const net = g ? g - str : null;
                 const cc = det?scC(det.nvp):{bg:C.bg,bd:C.border};
                 
-                return <div key={player.name} style={{display:"flex",justifyContent:"space-between",alignItems:"center",background:C.bg,border:`2px solid ${cc.bd}`,borderRadius:"8px",padding:"10px"}}>
-                  <div style={{flex:1}}>
-                    <div style={{fontSize:"14px",fontWeight:800,color:C.text}}>{player.name}</div>
-                    <div style={{fontSize:"10px",color:C.muted,fontWeight:600}}>HCP {player.handicap}{str>0&&` · ${str} stroke${str>1?"s":""}`}</div>
-                  </div>
-                  <div style={{display:"flex",alignItems:"center",gap:"12px"}}>
-                    <input type="number" min="1" max="15" value={g} onChange={e=>setScore(day,player.name,hole.number,e.target.value)} onFocus={e=>e.target.select()}
-                      style={{background:cc.bg,border:`2px solid ${cc.bd}`,borderRadius:"8px",padding:"8px",color:C.text,fontSize:"18px",fontFamily:"'JetBrains Mono',monospace",outline:"none",width:"60px",textAlign:"center",fontWeight:800}}/>
-                    {net!==null&&<div style={{textAlign:"center",minWidth:"40px"}}>
-                      <div style={{fontSize:"9px",color:C.muted,fontWeight:600}}>Net</div>
-                      <div style={{fontSize:"16px",fontWeight:900,fontFamily:"'JetBrains Mono',monospace",color:det?cc.bd:C.dim}}>{net}</div>
-                    </div>}
-                  </div>
+                return <div key={hole.number} style={{background:pIdx%2===0?C.bg:C.bg2,borderRight:`1px solid ${C.border}`,borderTop:`1px solid ${C.border}`,padding:"4px 2px",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:"2px"}}>
+                  <input type="number" min="1" max="15" value={g} onChange={e=>setScore(day,player.name,hole.number,e.target.value)} onFocus={e=>e.target.select()}
+                    style={{background:cc.bg,border:`2px solid ${cc.bd}`,borderRadius:"6px",padding:"4px",color:C.text,fontSize:"16px",fontFamily:"'JetBrains Mono',monospace",outline:"none",width:"40px",textAlign:"center",fontWeight:800}}/>
+                  {net!==null&&<div style={{fontSize:"9px",fontWeight:700,fontFamily:"'JetBrains Mono',monospace",color:det?cc.bd:C.dim}}>{net}</div>}
                 </div>})}
-            </div>
-          </div>})}
+              <div style={{background:pIdx%2===0?C.bg:C.bg2,padding:"12px 4px",fontSize:"14px",fontWeight:900,fontFamily:"'JetBrains Mono',monospace",color:C.text,borderRight:`1px solid ${C.border}`,borderTop:`1px solid ${C.border}`,textAlign:"center",display:"flex",alignItems:"center",justifyContent:"center"}}>{out9||"-"}</div>
+              <div style={{background:pIdx%2===0?C.bg:C.bg2,padding:"12px 4px",fontSize:"14px",fontWeight:900,fontFamily:"'JetBrains Mono',monospace",color:C.text,borderTop:`1px solid ${C.border}`,textAlign:"center",display:"flex",alignItems:"center",justifyContent:"center"}}>{in9||"-"}</div>
+            </React.Fragment>})}
+        </div>
       </div>
       </>}
       {/* Day Points */}
