@@ -203,38 +203,42 @@ export default function App() {
         </div>
       </div>
       </> : <>
-      {/* Full Scoresheet View */}
-      <div style={{display:"flex",justifyContent:"center",marginBottom:"14px"}}><div style={{display:"flex",gap:"2px",background:C.bg2,borderRadius:"10px",padding:"3px",border:`1px solid ${C.border}`}}>
-        {["front","back"].map(r=><button key={r} onClick={()=>setNine(r)} style={{padding:"6px 16px",borderRadius:"8px",border:"none",fontSize:"12px",fontWeight:700,cursor:"pointer",fontFamily:"inherit",background:nine===r?C.accentDim:"transparent",color:nine===r?C.accentBr:C.dim}}>{r==="front"?"Front 9":"Back 9"}</button>)}
-      </div></div>
-      <div style={{background:C.bg2,border:`1px solid ${C.border}`,borderRadius:"14px",padding:"10px",marginBottom:"14px",overflowX:"auto"}}>
-        <table style={{width:"100%",borderCollapse:"collapse",minWidth:"580px"}}>
-          <thead>
-            <tr><th style={{padding:"6px",fontSize:"10px",fontWeight:800,color:C.muted,textAlign:"left",borderBottom:`1px solid ${C.border}`,position:"sticky",left:0,background:C.bg2,zIndex:2,minWidth:"70px"}}>Hole</th>
-              {dh.map(h=><th key={h.number} style={{padding:"6px 3px",fontSize:"12px",fontWeight:800,color:C.dim,textAlign:"center",borderBottom:`1px solid ${C.border}`,minWidth:"40px"}}>{h.number}</th>)}
-              <th style={{padding:"6px",fontSize:"10px",fontWeight:800,color:C.accent,textAlign:"center",borderBottom:`1px solid ${C.border}`,minWidth:"45px"}}>{nine==="front"?"OUT":"IN"}</th>
-            </tr>
-            <tr><td style={{padding:"4px 6px",fontSize:"10px",fontWeight:700,color:C.muted,borderBottom:`1px solid ${C.border}20`,position:"sticky",left:0,background:C.bg2,zIndex:2}}>Par</td>
-              {dh.map(h=><td key={h.number} style={{padding:"4px",fontSize:"12px",color:C.dim,fontWeight:700,textAlign:"center",borderBottom:`1px solid ${C.border}20`}}>{h.par}</td>)}
-              <td style={{padding:"4px",fontSize:"12px",fontWeight:800,color:C.dim,textAlign:"center",borderBottom:`1px solid ${C.border}20`}}>{dh.reduce((s,h)=>s+h.par,0)}</td>
-            </tr>
-            <tr><td style={{padding:"4px 6px",fontSize:"10px",fontWeight:700,color:C.muted,borderBottom:`1px solid ${C.border}`,position:"sticky",left:0,background:C.bg2,zIndex:2}}>HCP</td>
-              {dh.map(h=><td key={h.number} style={{padding:"4px",fontSize:"10px",color:C.muted,textAlign:"center",borderBottom:`1px solid ${C.border}`}}>{h.hcp}</td>)}
-              <td style={{borderBottom:`1px solid ${C.border}`}}></td>
-            </tr>
-          </thead>
-          <tbody>{players.map(player=>{const pr=dr.find(r=>r.player===player.name)||{};const ng=dh.reduce((s,h)=>s+(ds[player.name]?.[h.number]||0),0);
-            return <tr key={player.name}>
-              <td style={{padding:"6px",textAlign:"left",borderBottom:`1px solid ${C.border}15`,position:"sticky",left:0,background:C.bg2,zIndex:2}}><div style={{fontWeight:800,fontSize:"13px",lineHeight:1.1}}>{player.name}</div><div style={{fontSize:"9px",color:C.muted,fontWeight:600}}>HCP {player.handicap}</div></td>
-              {dh.map(hole=>{const g=ds[player.name]?.[hole.number]||"";const det=pr.holes?.find(d=>d.hole===hole.number);const str=getStrokes(player.handicap,hole.hcp);const cc=det?scC(det.nvp):{bg:"transparent",bd:C.border};
-                return <td key={hole.number} style={{padding:"3px 1px",textAlign:"center",borderBottom:`1px solid ${C.border}15`,position:"relative"}}>
-                  {str>0&&<div style={{position:"absolute",top:"2px",right:"3px",width:"4px",height:"4px",borderRadius:"50%",background:C.accent}}/>}
-                  <input type="number" min="1" max="15" value={g} onChange={e=>setScore(day,player.name,hole.number,e.target.value)} onFocus={e=>e.target.select()}
-                    style={{background:cc.bg,border:`1.5px solid ${cc.bd}`,borderRadius:"6px",padding:"4px 2px",color:C.text,fontSize:"13px",fontFamily:"'JetBrains Mono',monospace",outline:"none",width:"36px",textAlign:"center",fontWeight:700}}/>
-                </td>})}
-              <td style={{padding:"6px",textAlign:"center",fontWeight:900,fontSize:"15px",fontFamily:"'JetBrains Mono',monospace",color:C.accent,borderBottom:`1px solid ${C.border}15`}}>{ng||"–"}</td>
-            </tr>})}</tbody>
-        </table>
+      {/* Full Scoresheet View - Vertical Layout */}
+      <div style={{display:"flex",flexDirection:"column",gap:"10px"}}>
+        {c.holes.map(hole=>{
+          const holePar = hole.par;
+          return <div key={hole.number} style={{background:C.bg2,border:`1px solid ${C.border}`,borderRadius:"12px",padding:"12px"}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"10px",paddingBottom:"8px",borderBottom:`1px solid ${C.border}`}}>
+              <div>
+                <div style={{fontSize:"20px",fontWeight:900,color:C.accent,fontFamily:"'JetBrains Mono',monospace"}}>HOLE {hole.number}</div>
+                <div style={{fontSize:"12px",color:C.dim,fontWeight:600}}>Par {holePar} · Handicap {hole.hcp}</div>
+              </div>
+            </div>
+            <div style={{display:"flex",flexDirection:"column",gap:"8px"}}>
+              {players.map(player=>{
+                const g = ds[player.name]?.[hole.number]||"";
+                const pr = dr.find(r=>r.player===player.name)||{};
+                const det = pr.holes?.find(d=>d.hole===hole.number);
+                const str = getStrokes(player.handicap,hole.hcp);
+                const net = g ? g - str : null;
+                const cc = det?scC(det.nvp):{bg:C.bg,bd:C.border};
+                
+                return <div key={player.name} style={{display:"flex",justifyContent:"space-between",alignItems:"center",background:C.bg,border:`2px solid ${cc.bd}`,borderRadius:"8px",padding:"10px"}}>
+                  <div style={{flex:1}}>
+                    <div style={{fontSize:"14px",fontWeight:800,color:C.text}}>{player.name}</div>
+                    <div style={{fontSize:"10px",color:C.muted,fontWeight:600}}>HCP {player.handicap}{str>0&&` · ${str} stroke${str>1?"s":""}`}</div>
+                  </div>
+                  <div style={{display:"flex",alignItems:"center",gap:"12px"}}>
+                    <input type="number" min="1" max="15" value={g} onChange={e=>setScore(day,player.name,hole.number,e.target.value)} onFocus={e=>e.target.select()}
+                      style={{background:cc.bg,border:`2px solid ${cc.bd}`,borderRadius:"8px",padding:"8px",color:C.text,fontSize:"18px",fontFamily:"'JetBrains Mono',monospace",outline:"none",width:"60px",textAlign:"center",fontWeight:800}}/>
+                    {net!==null&&<div style={{textAlign:"center",minWidth:"40px"}}>
+                      <div style={{fontSize:"9px",color:C.muted,fontWeight:600}}>Net</div>
+                      <div style={{fontSize:"16px",fontWeight:900,fontFamily:"'JetBrains Mono',monospace",color:det?cc.bd:C.dim}}>{net}</div>
+                    </div>}
+                  </div>
+                </div>})}
+            </div>
+          </div>})}
       </div>
       </>}
       {/* Day Points */}
