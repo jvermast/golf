@@ -5,6 +5,10 @@ import { isConfigured } from "./firebase";
 import { C, medal, bdg, scC, Chev } from "./ui.jsx";
 
 export default function App() {
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
   const [view, setView] = useState("leaderboard");
   const [day, setDay] = useState(0);
   const [players, setPlayers] = useState(DEFAULT_PLAYERS);
@@ -14,6 +18,12 @@ export default function App() {
 
   const fbActive = isConfigured();
   const { status: fbStatus, lastSync, debouncedSync } = useFirestoreSync(scores, players, setScores, setPlayers);
+
+  // Check if already logged in
+  useEffect(() => {
+    const loggedIn = sessionStorage.getItem("golfLoggedIn");
+    if (loggedIn === "true") setIsLoggedIn(true);
+  }, []);
 
   // Local backup
   useEffect(() => {
@@ -25,6 +35,17 @@ export default function App() {
   useEffect(() => {
     try { localStorage.setItem("golf26", JSON.stringify({ scores, players })); } catch {}
   }, [scores, players]);
+
+  const handleLogin = (e) => {
+    e.preventDefault();
+    if (username === "boys" && password === "12345") {
+      setIsLoggedIn(true);
+      sessionStorage.setItem("golfLoggedIn", "true");
+      setError("");
+    } else {
+      setError("Invalid credentials");
+    }
+  };
 
   const allR = useMemo(() => courses.map((c, i) => calcDay(c, players, scores[i] || {})), [courses, players, scores]);
   const board = useMemo(() => {
@@ -119,44 +140,58 @@ export default function App() {
   // ═══════════════════════════════════════════════════════════════════════════
   const Scores = () => {
     const c = courses[day], ds = scores[day] || {}, dr = allR[day];
-    const dh = nine === "front" ? c.holes.slice(0, 9) : c.holes.slice(9, 18);
+    const [currentHole, setCurrentHole] = useState(0); // 0-17 for all 18 holes
+    const hole = c.holes[currentHole];
+    const holePar = hole.par;
+    
     return <div>
       <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:"14px"}}>
         <button onClick={()=>day>0&&setDay(day-1)} style={{background:C.bg2,border:`1px solid ${C.border}`,borderRadius:"8px",padding:"7px",color:C.dim,cursor:"pointer",opacity:day===0?0.3:1}}><Chev dir="left"/></button>
         <div style={{textAlign:"center"}}><div style={{fontSize:"10px",color:C.muted,fontWeight:800,textTransform:"uppercase",letterSpacing:"0.1em"}}>Day {day+1}</div><div style={{fontSize:"17px",fontWeight:800,letterSpacing:"-0.02em"}}>{c.name}</div><div style={{fontSize:"11px",color:C.dim}}>Par {c.holes.reduce((s,h)=>s+h.par,0)}</div></div>
         <button onClick={()=>day<5&&setDay(day+1)} style={{background:C.bg2,border:`1px solid ${C.border}`,borderRadius:"8px",padding:"7px",color:C.dim,cursor:"pointer",opacity:day===5?0.3:1}}><Chev dir="right"/></button>
       </div>
-      <div style={{display:"flex",justifyContent:"center",marginBottom:"14px"}}><div style={{display:"flex",gap:"2px",background:C.bg2,borderRadius:"10px",padding:"3px",border:`1px solid ${C.border}`}}>
-        {["front","back"].map(r=><button key={r} onClick={()=>setNine(r)} style={{padding:"6px 16px",borderRadius:"8px",border:"none",fontSize:"12px",fontWeight:700,cursor:"pointer",fontFamily:"inherit",background:nine===r?C.accentDim:"transparent",color:nine===r?C.accentBr:C.dim}}>{r==="front"?"Front 9":"Back 9"}</button>)}
-      </div></div>
-      <div style={{background:C.bg2,border:`1px solid ${C.border}`,borderRadius:"14px",padding:"10px",marginBottom:"14px",overflowX:"auto"}}>
-        <table style={{width:"100%",borderCollapse:"collapse",minWidth:"580px"}}>
-          <thead>
-            <tr><th style={{padding:"6px",fontSize:"10px",fontWeight:800,color:C.muted,textAlign:"left",borderBottom:`1px solid ${C.border}`,position:"sticky",left:0,background:C.bg2,zIndex:2,minWidth:"70px"}}>Hole</th>
-              {dh.map(h=><th key={h.number} style={{padding:"6px 3px",fontSize:"12px",fontWeight:800,color:C.dim,textAlign:"center",borderBottom:`1px solid ${C.border}`,minWidth:"40px"}}>{h.number}</th>)}
-              <th style={{padding:"6px",fontSize:"10px",fontWeight:800,color:C.accent,textAlign:"center",borderBottom:`1px solid ${C.border}`,minWidth:"45px"}}>{nine==="front"?"OUT":"IN"}</th>
-            </tr>
-            <tr><td style={{padding:"4px 6px",fontSize:"10px",fontWeight:700,color:C.muted,borderBottom:`1px solid ${C.border}20`,position:"sticky",left:0,background:C.bg2,zIndex:2}}>Par</td>
-              {dh.map(h=><td key={h.number} style={{padding:"4px",fontSize:"12px",color:C.dim,fontWeight:700,textAlign:"center",borderBottom:`1px solid ${C.border}20`}}>{h.par}</td>)}
-              <td style={{padding:"4px",fontSize:"12px",fontWeight:800,color:C.dim,textAlign:"center",borderBottom:`1px solid ${C.border}20`}}>{dh.reduce((s,h)=>s+h.par,0)}</td>
-            </tr>
-            <tr><td style={{padding:"4px 6px",fontSize:"10px",fontWeight:700,color:C.muted,borderBottom:`1px solid ${C.border}`,position:"sticky",left:0,background:C.bg2,zIndex:2}}>HCP</td>
-              {dh.map(h=><td key={h.number} style={{padding:"4px",fontSize:"10px",color:C.muted,textAlign:"center",borderBottom:`1px solid ${C.border}`}}>{h.hcp}</td>)}
-              <td style={{borderBottom:`1px solid ${C.border}`}}></td>
-            </tr>
-          </thead>
-          <tbody>{players.map(player=>{const pr=dr.find(r=>r.player===player.name)||{};const ng=dh.reduce((s,h)=>s+(ds[player.name]?.[h.number]||0),0);
-            return <tr key={player.name}>
-              <td style={{padding:"6px",textAlign:"left",borderBottom:`1px solid ${C.border}15`,position:"sticky",left:0,background:C.bg2,zIndex:2}}><div style={{fontWeight:800,fontSize:"13px",lineHeight:1.1}}>{player.name}</div><div style={{fontSize:"9px",color:C.muted,fontWeight:600}}>HCP {player.handicap}</div></td>
-              {dh.map(hole=>{const g=ds[player.name]?.[hole.number]||"";const det=pr.holes?.find(d=>d.hole===hole.number);const str=getStrokes(player.handicap,hole.hcp);const cc=det?scC(det.nvp):{bg:"transparent",bd:C.border};
-                return <td key={hole.number} style={{padding:"3px 1px",textAlign:"center",borderBottom:`1px solid ${C.border}15`,position:"relative"}}>
-                  {str>0&&<div style={{position:"absolute",top:"2px",right:"3px",width:"4px",height:"4px",borderRadius:"50%",background:C.accent}}/>}
-                  <input type="number" min="1" max="15" value={g} onChange={e=>setScore(day,player.name,hole.number,e.target.value)} onFocus={e=>e.target.select()}
-                    style={{background:cc.bg,border:`1.5px solid ${cc.bd}`,borderRadius:"6px",padding:"4px 2px",color:C.text,fontSize:"13px",fontFamily:"'JetBrains Mono',monospace",outline:"none",width:"36px",textAlign:"center",fontWeight:700}}/>
-                </td>})}
-              <td style={{padding:"6px",textAlign:"center",fontWeight:900,fontSize:"15px",fontFamily:"'JetBrains Mono',monospace",color:C.accent,borderBottom:`1px solid ${C.border}15`}}>{ng||"–"}</td>
-            </tr>})}</tbody>
-        </table>
+      
+      {/* Hole Navigation */}
+      <div style={{background:C.bg2,border:`1px solid ${C.border}`,borderRadius:"14px",padding:"14px",marginBottom:"14px"}}>
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:"14px"}}>
+          <button onClick={()=>currentHole>0&&setCurrentHole(currentHole-1)} disabled={currentHole===0} style={{background:C.accent,border:"none",borderRadius:"8px",padding:"10px 16px",color:"#fff",fontSize:"14px",fontWeight:700,cursor:"pointer",opacity:currentHole===0?0.3:1}}>← Prev</button>
+          <div style={{textAlign:"center"}}>
+            <div style={{fontSize:"28px",fontWeight:900,color:C.accent,fontFamily:"'JetBrains Mono',monospace"}}>HOLE {hole.number}</div>
+            <div style={{fontSize:"13px",color:C.dim,fontWeight:700}}>Par {holePar} · Handicap {hole.hcp}</div>
+          </div>
+          <button onClick={()=>currentHole<17&&setCurrentHole(currentHole+1)} disabled={currentHole===17} style={{background:C.accent,border:"none",borderRadius:"8px",padding:"10px 16px",color:"#fff",fontSize:"14px",fontWeight:700,cursor:"pointer",opacity:currentHole===17?0.3:1}}>Next →</button>
+        </div>
+        
+        {/* Score Entry Cards */}
+        <div style={{display:"flex",flexDirection:"column",gap:"10px"}}>
+          {players.map(player=>{
+            const g = ds[player.name]?.[hole.number]||"";
+            const pr = dr.find(r=>r.player===player.name)||{};
+            const det = pr.holes?.find(d=>d.hole===hole.number);
+            const str = getStrokes(player.handicap,hole.hcp);
+            const net = g ? g - str : null;
+            const cc = det?scC(det.nvp):{bg:C.bg,bd:C.border};
+            
+            return <div key={player.name} style={{background:C.bg,border:`2px solid ${cc.bd}`,borderRadius:"12px",padding:"14px"}}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"10px"}}>
+                <div>
+                  <div style={{fontSize:"16px",fontWeight:800,color:C.text}}>{player.name}</div>
+                  <div style={{fontSize:"11px",color:C.muted,fontWeight:600}}>HCP {player.handicap}{str>0&&` · ${str} stroke${str>1?"s":""}`}</div>
+                </div>
+                {net!==null&&<div style={{textAlign:"right"}}>
+                  <div style={{fontSize:"11px",color:C.muted,fontWeight:600}}>Net</div>
+                  <div style={{fontSize:"20px",fontWeight:900,fontFamily:"'JetBrains Mono',monospace",color:det?cc.bd:C.dim}}>{net}</div>
+                </div>}
+              </div>
+              <div style={{display:"grid",gridTemplateColumns:"repeat(8,1fr)",gap:"6px"}}>
+                {[1,2,3,4,5,6,7,8].map(score=><button key={score} onClick={()=>setScore(day,player.name,hole.number,score)} style={{background:g===score?C.accent:"transparent",border:`2px solid ${g===score?C.accent:C.border}`,borderRadius:"8px",padding:"12px",color:g===score?"#fff":C.text,fontSize:"16px",fontWeight:800,cursor:"pointer",fontFamily:"'JetBrains Mono',monospace"}}>{score}</button>)}
+              </div>
+              <div style={{display:"flex",gap:"6px",marginTop:"6px"}}>
+                {[9,10].map(score=><button key={score} onClick={()=>setScore(day,player.name,hole.number,score)} style={{flex:1,background:g===score?C.accent:"transparent",border:`2px solid ${g===score?C.accent:C.border}`,borderRadius:"8px",padding:"12px",color:g===score?"#fff":C.text,fontSize:"16px",fontWeight:800,cursor:"pointer",fontFamily:"'JetBrains Mono',monospace"}}>{score}</button>)}
+                <button onClick={()=>setScore(day,player.name,hole.number,"")} style={{flex:1,background:C.bogey+"15",border:`2px solid ${C.bogey}40`,borderRadius:"8px",padding:"12px",color:C.bogey,fontSize:"14px",fontWeight:700,cursor:"pointer"}}>Clear</button>
+              </div>
+            </div>})}
+        </div>
       </div>
       {/* Day Points */}
       <div style={{background:C.bg2,border:`1px solid ${C.border}`,borderRadius:"14px",padding:"14px",marginBottom:"14px",overflowX:"auto"}}>
@@ -319,6 +354,32 @@ export default function App() {
   // ═══════════════════════════════════════════════════════════════════════════
   // SHELL
   // ═══════════════════════════════════════════════════════════════════════════
+  
+  // Login Screen
+  if (!isLoggedIn) {
+    return <div style={{fontFamily:"'DM Sans','Helvetica Neue',sans-serif",minHeight:"100vh",background:C.bg,display:"flex",alignItems:"center",justifyContent:"center"}}>
+      <div style={{background:C.bg2,border:`1px solid ${C.border}`,borderRadius:"16px",padding:"32px",width:"100%",maxWidth:"320px",boxShadow:"0 4px 12px rgba(0,0,0,0.1)"}}>
+        <div style={{textAlign:"center",marginBottom:"24px"}}>
+          <div style={{fontSize:"32px",marginBottom:"8px"}}>⛳</div>
+          <h1 style={{fontSize:"24px",fontWeight:900,color:C.text,marginBottom:"4px"}}>Myrtle Beach '26</h1>
+          <div style={{fontSize:"12px",color:C.muted}}>Golf Trip Scoring</div>
+        </div>
+        <form onSubmit={handleLogin}>
+          <div style={{marginBottom:"14px"}}>
+            <label style={{display:"block",fontSize:"11px",fontWeight:700,color:C.muted,marginBottom:"4px",textTransform:"uppercase",letterSpacing:"0.05em"}}>Username</label>
+            <input type="text" value={username} onChange={e=>setUsername(e.target.value)} autoComplete="username" style={{width:"100%",background:C.bg,border:`1px solid ${C.border}`,borderRadius:"8px",padding:"10px 12px",color:C.text,fontSize:"14px",fontFamily:"inherit",outline:"none"}}/>
+          </div>
+          <div style={{marginBottom:"18px"}}>
+            <label style={{display:"block",fontSize:"11px",fontWeight:700,color:C.muted,marginBottom:"4px",textTransform:"uppercase",letterSpacing:"0.05em"}}>Password</label>
+            <input type="password" value={password} onChange={e=>setPassword(e.target.value)} autoComplete="current-password" style={{width:"100%",background:C.bg,border:`1px solid ${C.border}`,borderRadius:"8px",padding:"10px 12px",color:C.text,fontSize:"14px",fontFamily:"inherit",outline:"none"}}/>
+          </div>
+          {error&&<div style={{background:C.bogey+"10",border:`1px solid ${C.bogey}40`,color:C.bogey,borderRadius:"8px",padding:"8px 12px",fontSize:"12px",marginBottom:"14px",textAlign:"center"}}>{error}</div>}
+          <button type="submit" style={{width:"100%",padding:"12px",borderRadius:"8px",border:"none",background:C.accent,color:"#fff",fontSize:"14px",fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>Login</button>
+        </form>
+      </div>
+    </div>;
+  }
+
   return <div style={{fontFamily:"'DM Sans','Helvetica Neue',sans-serif",color:C.text,minHeight:"100vh",background:C.bg}}>
     <div style={{background:C.bg2,backdropFilter:"blur(20px)",borderBottom:`1px solid ${C.border}`,padding:"10px 14px",position:"sticky",top:0,zIndex:100,display:"flex",alignItems:"center",justifyContent:"space-between",gap:"6px"}}>
       <div style={{display:"flex",alignItems:"center",gap:"7px",fontWeight:800,fontSize:"14px",color:C.accent,whiteSpace:"nowrap",letterSpacing:"-0.02em"}}>⛳ Myrtle '26</div>
