@@ -14,12 +14,13 @@ export default function App() {
   const [players, setPlayers] = useState(DEFAULT_PLAYERS);
   const [scores, setScores] = useState({});
   const [ctp, setCtp] = useState({});
+  const [moneyCtp, setMoneyCtp] = useState({});
   const [nine, setNine] = useState("front");
   const [currentHole, setCurrentHole] = useState(0);
   const courses = COURSES;
 
   const fbActive = isConfigured();
-  const { status: fbStatus, lastSync, debouncedSync } = useFirestoreSync(scores, players, setScores, setPlayers, ctp, setCtp);
+  const { status: fbStatus, lastSync, debouncedSync } = useFirestoreSync(scores, players, setScores, setPlayers, ctp, setCtp, moneyCtp, setMoneyCtp);
 
   // Check if already logged in
   useEffect(() => {
@@ -31,12 +32,12 @@ export default function App() {
   useEffect(() => {
     try {
       const s = JSON.parse(localStorage.getItem("golf26") || "null");
-      if (s) { if (s.scores) setScores(s.scores); if (s.players) setPlayers(s.players); if (s.ctp) setCtp(s.ctp); }
+      if (s) { if (s.scores) setScores(s.scores); if (s.players) setPlayers(s.players); if (s.ctp) setCtp(s.ctp); if (s.moneyCtp) setMoneyCtp(s.moneyCtp); }
     } catch {}
   }, []);
   useEffect(() => {
-    try { localStorage.setItem("golf26", JSON.stringify({ scores, players, ctp })); } catch {}
-  }, [scores, players, ctp]);
+    try { localStorage.setItem("golf26", JSON.stringify({ scores, players, ctp, moneyCtp })); } catch {}
+  }, [scores, players, ctp, moneyCtp]);
 
   const handleLogin = (e) => {
     e.preventDefault();
@@ -61,30 +62,59 @@ export default function App() {
     return Object.entries(t).map(([name, d]) => ({ name, ...d })).sort((a, b) => b.total - a.total);
   }, [allR, players]);
 
+  // Calculate money game CTP winnings
+  const moneyGameResults = useMemo(() => {
+    const winnings = {};
+    players.forEach(p => { winnings[p.name] = 0; });
+    let currentPot = 0;
+    
+    courses.forEach((course, dayIdx) => {
+      if (!course.par3Holes) return;
+      course.par3Holes.forEach(holeNum => {
+        currentPot += players.length; // Add $1 per player
+        const winner = moneyCtp[dayIdx]?.[holeNum];
+        if (winner && players.find(p => p.name === winner)) {
+          winnings[winner] += currentPot;
+          currentPot = 0;
+        }
+      });
+    });
+    
+    return { winnings, currentPot };
+  }, [courses, players, moneyCtp]);
+
   const setScore = useCallback((di, pn, hn, v) => {
     const val = parseInt(v) || 0;
     setScores(prev => {
       const next = { ...prev, [di]: { ...prev[di], [pn]: { ...(prev[di]?.[pn] || {}), [hn]: val } } };
-      if (fbActive) debouncedSync(next, players, ctp);
+      if (fbActive) debouncedSync(next, players, ctp, moneyCtp);
       return next;
     });
-  }, [debouncedSync, players, fbActive, ctp]);
+  }, [debouncedSync, players, fbActive, ctp, moneyCtp]);
 
   const setCtpWinner = useCallback((di, hn, pn) => {
     setCtp(prev => {
       const next = { ...prev, [di]: { ...(prev[di] || {}), [hn]: pn } };
-      if (fbActive) debouncedSync(scores, players, next);
+      if (fbActive) debouncedSync(scores, players, next, moneyCtp);
       return next;
     });
-  }, [debouncedSync, scores, players, fbActive]);
+  }, [debouncedSync, scores, players, fbActive, moneyCtp]);
+
+  const setMoneyCtpWinner = useCallback((di, hn, pn) => {
+    setMoneyCtp(prev => {
+      const next = { ...prev, [di]: { ...(prev[di] || {}), [hn]: pn } };
+      if (fbActive) debouncedSync(scores, players, ctp, next);
+      return next;
+    });
+  }, [debouncedSync, scores, players, ctp, fbActive]);
 
   const updatePlayers = useCallback((np) => {
     setPlayers(np);
-    if (fbActive) debouncedSync(scores, np, ctp);
-  }, [debouncedSync, scores, fbActive, ctp]);
+    if (fbActive) debouncedSync(scores, np, ctp, moneyCtp);
+  }, [debouncedSync, scores, fbActive, ctp, moneyCtp]);
 
-  const handleExport = () => { const b = new Blob([JSON.stringify({players,scores,ctp},null,2)],{type:"application/json"}); const a=document.createElement("a"); a.href=URL.createObjectURL(b); a.download="myrtle-2026.json"; a.click(); };
-  const handleImport = e => { const f=e.target.files[0]; if(!f)return; const r=new FileReader(); r.onload=ev=>{try{const d=JSON.parse(ev.target.result);if(d.players)setPlayers(d.players);if(d.scores)setScores(d.scores);if(d.ctp)setCtp(d.ctp);if(fbActive)debouncedSync(d.scores||scores,d.players||players,d.ctp||ctp);}catch{alert("Bad JSON")}}; r.readAsText(f); };
+  const handleExport = () => { const b = new Blob([JSON.stringify({players,scores,ctp,moneyCtp},null,2)],{type:"application/json"}); const a=document.createElement("a"); a.href=URL.createObjectURL(b); a.download="myrtle-2026.json"; a.click(); };
+  const handleImport = e => { const f=e.target.files[0]; if(!f)return; const r=new FileReader(); r.onload=ev=>{try{const d=JSON.parse(ev.target.result);if(d.players)setPlayers(d.players);if(d.scores)setScores(d.scores);if(d.ctp)setCtp(d.ctp);if(d.moneyCtp)setMoneyCtp(d.moneyCtp);if(fbActive)debouncedSync(d.scores||scores,d.players||players,d.ctp||ctp,d.moneyCtp||moneyCtp);}catch{alert("Bad JSON")}}; r.readAsText(f); };
 
   // ─── STATUS DOT ─────────────────────────────────────────────────────────
   const StatusDot = () => {
@@ -143,6 +173,25 @@ export default function App() {
           </div>)}</div>:<div style={{color:C.muted,fontSize:"12px"}}>No scores yet</div>}
         </div>})}
       </div>
+      
+      {/* Money Game Summary */}
+      <div style={{fontSize:"10px",fontWeight:800,textTransform:"uppercase",letterSpacing:"0.15em",color:C.muted,marginTop:"20px",marginBottom:"10px",paddingLeft:"4px"}}>💰 Money Game CTP</div>
+      <div style={{background:C.bg2,border:`1px solid ${C.border}`,borderRadius:"14px",padding:"16px",marginBottom:"14px",overflowX:"auto"}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"14px"}}>
+          <div style={{fontSize:"12px",color:C.muted}}>Current Pot:</div>
+          <div style={{fontSize:"24px",fontWeight:900,fontFamily:"'JetBrains Mono',monospace",color:C.gold}}>${moneyGameResults.currentPot}</div>
+        </div>
+        <table style={{width:"100%",borderCollapse:"collapse"}}>
+          <thead><tr>
+            <th style={{padding:"8px 6px",fontSize:"10px",fontWeight:800,textTransform:"uppercase",letterSpacing:"0.08em",color:C.muted,textAlign:"left",borderBottom:`1px solid ${C.border}`}}>Player</th>
+            <th style={{padding:"8px 6px",fontSize:"10px",fontWeight:800,textTransform:"uppercase",letterSpacing:"0.08em",color:C.muted,textAlign:"center",borderBottom:`1px solid ${C.border}`}}>Winnings</th>
+          </tr></thead>
+          <tbody>{Object.entries(moneyGameResults.winnings).sort((a,b)=>b[1]-a[1]).map(([name, amount])=><tr key={name}>
+            <td style={{padding:"10px 6px",fontWeight:800,fontSize:"14px"}}>{name}</td>
+            <td style={{textAlign:"center",padding:"10px 6px",fontWeight:900,fontSize:"18px",fontFamily:"'JetBrains Mono',monospace",color:amount>0?C.gold:C.muted}}>${amount}</td>
+          </tr>)}</tbody>
+        </table>
+      </div>
     </div>;
   };
 
@@ -183,7 +232,7 @@ export default function App() {
         
         {/* CTP Selection for Par 3s */}
         {c.ctpHoles && c.ctpHoles.includes(hole.number) && <div style={{marginBottom:"14px",background:"linear-gradient(135deg, "+C.birdie+"15, "+C.accent+"10)",border:`2px solid ${C.birdie}40`,borderRadius:"12px",padding:"14px"}}>
-          <div style={{fontSize:"12px",fontWeight:800,textTransform:"uppercase",letterSpacing:"0.1em",color:C.birdie,marginBottom:"10px",textAlign:"center"}}>🎯 Closest to the Pin</div>
+          <div style={{fontSize:"12px",fontWeight:800,textTransform:"uppercase",letterSpacing:"0.1em",color:C.birdie,marginBottom:"10px",textAlign:"center"}}>🎯 Closest to the Pin (3 Points)</div>
           <div style={{display:"flex",gap:"8px",justifyContent:"center",flexWrap:"wrap"}}>
             {players.map(player=>{
               const isWinner = (ctp[day]||{})[hole.number] === player.name;
@@ -191,6 +240,43 @@ export default function App() {
             })}
           </div>
         </div>}
+
+        {/* Money Game CTP for ALL Par 3s */}
+        {c.par3Holes && c.par3Holes.includes(hole.number) && (() => {
+          // Calculate current pot up to this hole
+          let potUpToHere = 0;
+          for (let di = 0; di < courses.length; di++) {
+            const course = courses[di];
+            if (!course.par3Holes) continue;
+            for (const hn of course.par3Holes) {
+              if (di < day || (di === day && hn < hole.number)) {
+                potUpToHere += players.length;
+                const winner = moneyCtp[di]?.[hn];
+                if (winner && players.find(p => p.name === winner)) {
+                  potUpToHere = 0;
+                }
+              } else if (di === day && hn === hole.number) {
+                potUpToHere += players.length;
+                break;
+              } else {
+                break;
+              }
+            }
+            if (di >= day) break;
+          }
+          
+          return <div style={{marginBottom:"14px",background:"linear-gradient(135deg, "+C.gold+"15, "+C.accent+"08)",border:`2px solid ${C.gold}60`,borderRadius:"12px",padding:"14px"}}>
+            <div style={{fontSize:"12px",fontWeight:800,textTransform:"uppercase",letterSpacing:"0.1em",color:C.gold,marginBottom:"4px",textAlign:"center"}}>💰 Money Game CTP</div>
+            <div style={{fontSize:"20px",fontWeight:900,fontFamily:"'JetBrains Mono',monospace",color:C.gold,marginBottom:"10px",textAlign:"center"}}>${potUpToHere} POT</div>
+            <div style={{display:"flex",gap:"8px",justifyContent:"center",flexWrap:"wrap"}}>
+              {players.map(player=>{
+                const isWinner = (moneyCtp[day]||{})[hole.number] === player.name;
+                return <button key={player.name} onClick={()=>setMoneyCtpWinner(day,hole.number,isWinner?null:player.name)} style={{background:isWinner?C.gold:"transparent",border:`2px solid ${isWinner?C.gold:C.border}`,borderRadius:"8px",padding:"10px 16px",color:isWinner?"#000":C.text,fontSize:"14px",fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>{player.name}</button>
+              })}
+              <button onClick={()=>setMoneyCtpWinner(day,hole.number,null)} style={{background:(moneyCtp[day]||{})[hole.number]?"transparent":C.bogey+"20",border:`2px solid ${(moneyCtp[day]||{})[hole.number]?C.border:C.bogey}`,borderRadius:"8px",padding:"10px 16px",color:(moneyCtp[day]||{})[hole.number]?C.muted:C.bogey,fontSize:"13px",fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>No Winner</button>
+            </div>
+          </div>
+        })()}
         
         {/* Score Entry Cards */}
         <div style={{display:"flex",flexDirection:"column",gap:"10px"}}>
@@ -237,9 +323,10 @@ export default function App() {
           {/* Hole Rows */}
           {c.holes.map((hole,hIdx)=>{
             const isCtp = c.ctpHoles && c.ctpHoles.includes(hole.number);
+            const isMoneyCtp = c.par3Holes && c.par3Holes.includes(hole.number);
             return <React.Fragment key={hole.number}>
               <div style={{background:hIdx%2===0?C.bg:C.bg2,padding:"12px 8px",fontSize:"12px",fontWeight:800,color:C.text,borderRight:`1px solid ${C.border}`,borderTop:`1px solid ${C.border}`,display:"flex",flexDirection:"column",justifyContent:"center"}}>
-                <div style={{fontSize:"14px",color:C.accent}}>{isCtp&&"🎯 "}{hole.number}</div>
+                <div style={{fontSize:"14px",color:C.accent}}>{isCtp&&"🎯"}{isMoneyCtp&&"💰"}{isCtp||isMoneyCtp?" ":""}{hole.number}</div>
                 <div style={{fontSize:"10px",color:C.dim}}>Par {hole.par}</div>
               </div>
               {players.map(player=>{

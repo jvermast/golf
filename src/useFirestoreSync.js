@@ -4,7 +4,7 @@ import { db } from './firebase';
 
 const DOC_PATH = 'trip/scores';
 
-export function useFirestoreSync(scores, players, setScores, setPlayers, ctp, setCtp) {
+export function useFirestoreSync(scores, players, setScores, setPlayers, ctp, setCtp, moneyCtp, setMoneyCtp) {
   const [status, setStatus] = useState(db ? 'connecting' : 'offline');
   const [lastSync, setLastSync] = useState(null);
   const skipNext = useRef(false);
@@ -20,6 +20,7 @@ export function useFirestoreSync(scores, players, setScores, setPlayers, ctp, se
         if (data.scores) setScores(data.scores);
         if (data.players) setPlayers(data.players);
         if (data.ctp) setCtp(data.ctp);
+        if (data.moneyCtp) setMoneyCtp(data.moneyCtp);
         setLastSync(new Date());
       }
       skipNext.current = false;
@@ -30,10 +31,10 @@ export function useFirestoreSync(scores, players, setScores, setPlayers, ctp, se
     });
 
     return () => unsub();
-  }, [setScores, setPlayers, setCtp]);
+  }, [setScores, setPlayers, setCtp, setMoneyCtp]);
 
   // Write to Firestore (debounced)
-  const syncToFirestore = useCallback(async (newScores, newPlayers, newCtp) => {
+  const syncToFirestore = useCallback(async (newScores, newPlayers, newCtp, newMoneyCtp) => {
     if (!db) return;
     try {
       skipNext.current = true;
@@ -41,6 +42,7 @@ export function useFirestoreSync(scores, players, setScores, setPlayers, ctp, se
         scores: newScores,
         players: newPlayers,
         ctp: newCtp,
+        moneyCtp: newMoneyCtp,
         updatedAt: new Date().toISOString(),
       });
       setLastSync(new Date());
@@ -50,9 +52,9 @@ export function useFirestoreSync(scores, players, setScores, setPlayers, ctp, se
     }
   }, []);
 
-  const debouncedSync = useCallback((newScores, newPlayers, newCtp) => {
+  const debouncedSync = useCallback((newScores, newPlayers, newCtp, newMoneyCtp) => {
     if (timer.current) clearTimeout(timer.current);
-    timer.current = setTimeout(() => syncToFirestore(newScores, newPlayers, newCtp), 600);
+    timer.current = setTimeout(() => syncToFirestore(newScores, newPlayers, newCtp, newMoneyCtp), 600);
   }, [syncToFirestore]);
 
   return { status, lastSync, debouncedSync };
