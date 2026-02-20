@@ -32,12 +32,20 @@ export default function App() {
   useEffect(() => {
     try {
       const s = JSON.parse(localStorage.getItem("golf26") || "null");
-      if (s) { if (s.scores) setScores(s.scores); if (s.players) setPlayers(s.players); if (s.ctp) setCtp(s.ctp); if (s.moneyCtp) setMoneyCtp(s.moneyCtp); }
+      if (s) {
+        if (s.scores) setScores(s.scores);
+        if (s.players) setPlayers(s.players);
+        if (s.ctp) setCtp(s.ctp);
+        if (s.moneyCtp) setMoneyCtp(s.moneyCtp);
+        if (s.day !== undefined) setDay(s.day);
+        if (s.currentHole !== undefined) setCurrentHole(s.currentHole);
+        if (s.view) setView(s.view);
+      }
     } catch {}
   }, []);
   useEffect(() => {
-    try { localStorage.setItem("golf26", JSON.stringify({ scores, players, ctp, moneyCtp })); } catch {}
-  }, [scores, players, ctp, moneyCtp]);
+    try { localStorage.setItem("golf26", JSON.stringify({ scores, players, ctp, moneyCtp, day, currentHole, view })); } catch {}
+  }, [scores, players, ctp, moneyCtp, day, currentHole, view]);
 
   const handleLogin = (e) => {
     e.preventDefault();
@@ -326,7 +334,7 @@ export default function App() {
             const isMoneyCtp = c.par3Holes && c.par3Holes.includes(hole.number);
             return <React.Fragment key={hole.number}>
               <div style={{background:hIdx%2===0?C.bg:C.bg2,padding:"12px 8px",fontSize:"12px",fontWeight:800,color:C.text,borderRight:`1px solid ${C.border}`,borderTop:`1px solid ${C.border}`,display:"flex",flexDirection:"column",justifyContent:"center"}}>
-                <div style={{fontSize:"14px",color:C.accent}}>{isCtp&&"🎯"}{isMoneyCtp&&"💰"}{isCtp||isMoneyCtp?" ":""}{hole.number}</div>
+                <div style={{fontSize:"14px",color:C.accent}}>{hole.number}{isCtp||isMoneyCtp?" ":""}{isCtp&&"🎯"}{isMoneyCtp&&"💰"}</div>
                 <div style={{fontSize:"10px",color:C.dim}}>Par {hole.par}</div>
               </div>
               {players.map(player=>{
