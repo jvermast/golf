@@ -1,26 +1,26 @@
 // ─── COURSE DATA ────────────────────────────────────────────────────────────
 export const COURSES = [
-  { name: "Sunday - True Blue", day: 1, holes: [
+  { name: "Sunday - True Blue", day: 1, ctpHoles: [7, 14], holes: [
     {number:1,par:5,hcp:1},{number:2,par:4,hcp:11},{number:3,par:3,hcp:15},{number:4,par:4,hcp:5},{number:5,par:5,hcp:13},{number:6,par:4,hcp:9},{number:7,par:3,hcp:17},{number:8,par:4,hcp:7},{number:9,par:5,hcp:3},
     {number:10,par:5,hcp:8},{number:11,par:3,hcp:18},{number:12,par:4,hcp:10},{number:13,par:4,hcp:14},{number:14,par:3,hcp:16},{number:15,par:5,hcp:4},{number:16,par:3,hcp:12},{number:17,par:4,hcp:2},{number:18,par:4,hcp:6}
   ]},
-  { name: "Monday - Tidewater", day: 2, holes: [
+  { name: "Monday - Tidewater", day: 2, ctpHoles: [9, 17], holes: [
     {number:1,par:5,hcp:15},{number:2,par:4,hcp:17},{number:3,par:3,hcp:13},{number:4,par:4,hcp:1},{number:5,par:4,hcp:3},{number:6,par:4,hcp:9},{number:7,par:4,hcp:7},{number:8,par:5,hcp:11},{number:9,par:3,hcp:5},
     {number:10,par:4,hcp:10},{number:11,par:4,hcp:2},{number:12,par:3,hcp:14},{number:13,par:5,hcp:6},{number:14,par:4,hcp:8},{number:15,par:4,hcp:18},{number:16,par:5,hcp:16},{number:17,par:3,hcp:12},{number:18,par:4,hcp:4}
   ]},
-  { name: "Tuesday - Plantation", day: 3, holes: [
+  { name: "Tuesday - Plantation", day: 3, ctpHoles: [7, 17], holes: [
     {number:1,par:4,hcp:4},{number:2,par:4,hcp:1},{number:3,par:3,hcp:15},{number:4,par:4,hcp:5},{number:5,par:4,hcp:7},{number:6,par:4,hcp:3},{number:7,par:3,hcp:17},{number:8,par:4,hcp:5},{number:9,par:4,hcp:11},
     {number:10,par:4,hcp:10},{number:11,par:5,hcp:4},{number:12,par:4,hcp:16},{number:13,par:3,hcp:18},{number:14,par:5,hcp:6},{number:15,par:4,hcp:12},{number:16,par:4,hcp:2},{number:17,par:3,hcp:14},{number:18,par:4,hcp:8}
   ]},
-  { name: "Wednesday - Prestwick", day: 4, holes: [
+  { name: "Wednesday - Prestwick", day: 4, ctpHoles: [8, 16], holes: [
     {number:1,par:4,hcp:8},{number:2,par:4,hcp:1},{number:3,par:4,hcp:5},{number:4,par:4,hcp:7},{number:5,par:3,hcp:11},{number:6,par:5,hcp:15},{number:7,par:4,hcp:13},{number:8,par:3,hcp:17},{number:9,par:5,hcp:3},
     {number:10,par:4,hcp:10},{number:11,par:4,hcp:14},{number:12,par:5,hcp:12},{number:13,par:3,hcp:18},{number:14,par:4,hcp:4},{number:15,par:4,hcp:8},{number:16,par:3,hcp:16},{number:17,par:5,hcp:2},{number:18,par:4,hcp:6}
   ]},
-  { name: "Thursday - World Tour", day: 5, holes: [
+  { name: "Thursday - World Tour", day: 5, ctpHoles: [7, 14], holes: [
     {number:1,par:4,hcp:18},{number:2,par:5,hcp:3},{number:3,par:3,hcp:7},{number:4,par:4,hcp:5},{number:5,par:5,hcp:5},{number:6,par:4,hcp:11},{number:7,par:3,hcp:9},{number:8,par:4,hcp:13},{number:9,par:4,hcp:17},
     {number:10,par:4,hcp:12},{number:11,par:5,hcp:10},{number:12,par:3,hcp:18},{number:13,par:4,hcp:2},{number:14,par:3,hcp:15},{number:15,par:5,hcp:8},{number:16,par:4,hcp:6},{number:17,par:4,hcp:16},{number:18,par:4,hcp:4}
   ]},
-  { name: "Friday - Kings North", day: 6, holes: [
+  { name: "Friday - Kings North", day: 6, ctpHoles: [8, 17], holes: [
     {number:1,par:5,hcp:10},{number:2,par:3,hcp:4},{number:3,par:4,hcp:12},{number:4,par:3,hcp:16},{number:5,par:4,hcp:14},{number:6,par:5,hcp:2},{number:7,par:4,hcp:6},{number:8,par:3,hcp:18},{number:9,par:4,hcp:4},
     {number:10,par:5,hcp:13},{number:11,par:4,hcp:11},{number:12,par:3,hcp:17},{number:13,par:4,hcp:3},{number:14,par:4,hcp:9},{number:15,par:5,hcp:1},{number:16,par:4,hcp:7},{number:17,par:3,hcp:15},{number:18,par:4,hcp:5}
   ]},
@@ -51,9 +51,9 @@ export function grossLabel(gvp) {
   return null;
 }
 
-export function calcDay(course, players, scores) {
+export function calcDay(course, players, scores, ctpWinners = {}) {
   const R = players.map(p => ({
-    player: p.name, pars: 0, birdies: 0, eagles: 0, skins: 0, lowNet: 0,
+    player: p.name, pars: 0, birdies: 0, eagles: 0, skins: 0, lowNet: 0, ctp: 0,
     totalNet: 0, totalGross: 0, holes: [],
     parPts: 0, birdiePts: 0, eaglePts: 0,
   }));
@@ -122,13 +122,24 @@ export function calcDay(course, players, scores) {
     const nets = R.map(r => r.totalNet);
     const best = Math.min(...nets);
     const ws = R.filter(r => r.totalNet === best);
-    if (ws.length === 1) ws[0].lowNet = 3;
-    else if (ws.length === 2) ws.forEach(w => w.lowNet = 1.5);
-    else ws.forEach(w => w.lowNet = 1);
+    if (ws.length === 1) ws[0].lowNet = 10;
+    else if (ws.length === 2) ws.forEach(w => w.lowNet = 5);
+    else ws.forEach(w => w.lowNet = 3.33);
+  }
+
+  // CTP bonus (3 points per win)
+  if (course.ctpHoles && ctpWinners) {
+    course.ctpHoles.forEach(holeNum => {
+      const winner = ctpWinners[holeNum];
+      if (winner) {
+        const rIdx = R.findIndex(r => r.player === winner);
+        if (rIdx !== -1) R[rIdx].ctp += 3;
+      }
+    });
   }
 
   R.forEach(r => {
-    r.totalPoints = r.parPts + r.birdiePts + r.eaglePts + r.skins + r.lowNet;
+    r.totalPoints = r.parPts + r.birdiePts + r.eaglePts + r.skins + r.lowNet + r.ctp;
   });
   return R;
 }

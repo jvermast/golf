@@ -4,7 +4,7 @@ import { db } from './firebase';
 
 const DOC_PATH = 'trip/scores';
 
-export function useFirestoreSync(scores, players, setScores, setPlayers) {
+export function useFirestoreSync(scores, players, setScores, setPlayers, ctp, setCtp) {
   const [status, setStatus] = useState(db ? 'connecting' : 'offline');
   const [lastSync, setLastSync] = useState(null);
   const skipNext = useRef(false);
@@ -19,6 +19,7 @@ export function useFirestoreSync(scores, players, setScores, setPlayers) {
         const data = snap.data();
         if (data.scores) setScores(data.scores);
         if (data.players) setPlayers(data.players);
+        if (data.ctp) setCtp(data.ctp);
         setLastSync(new Date());
       }
       skipNext.current = false;
@@ -29,16 +30,17 @@ export function useFirestoreSync(scores, players, setScores, setPlayers) {
     });
 
     return () => unsub();
-  }, [setScores, setPlayers]);
+  }, [setScores, setPlayers, setCtp]);
 
   // Write to Firestore (debounced)
-  const syncToFirestore = useCallback(async (newScores, newPlayers) => {
+  const syncToFirestore = useCallback(async (newScores, newPlayers, newCtp) => {
     if (!db) return;
     try {
       skipNext.current = true;
       await setDoc(doc(db, 'trip', 'scores'), {
         scores: newScores,
         players: newPlayers,
+        ctp: newCtp,
         updatedAt: new Date().toISOString(),
       });
       setLastSync(new Date());
@@ -48,9 +50,9 @@ export function useFirestoreSync(scores, players, setScores, setPlayers) {
     }
   }, []);
 
-  const debouncedSync = useCallback((newScores, newPlayers) => {
+  const debouncedSync = useCallback((newScores, newPlayers, newCtp) => {
     if (timer.current) clearTimeout(timer.current);
-    timer.current = setTimeout(() => syncToFirestore(newScores, newPlayers), 600);
+    timer.current = setTimeout(() => syncToFirestore(newScores, newPlayers, newCtp), 600);
   }, [syncToFirestore]);
 
   return { status, lastSync, debouncedSync };

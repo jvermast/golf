@@ -13,12 +13,13 @@ export default function App() {
   const [day, setDay] = useState(0);
   const [players, setPlayers] = useState(DEFAULT_PLAYERS);
   const [scores, setScores] = useState({});
+  const [ctp, setCtp] = useState({});
   const [nine, setNine] = useState("front");
   const [currentHole, setCurrentHole] = useState(0);
   const courses = COURSES;
 
   const fbActive = isConfigured();
-  const { status: fbStatus, lastSync, debouncedSync } = useFirestoreSync(scores, players, setScores, setPlayers);
+  const { status: fbStatus, lastSync, debouncedSync } = useFirestoreSync(scores, players, setScores, setPlayers, ctp, setCtp);
 
   // Check if already logged in
   useEffect(() => {
@@ -30,12 +31,12 @@ export default function App() {
   useEffect(() => {
     try {
       const s = JSON.parse(localStorage.getItem("golf26") || "null");
-      if (s) { if (s.scores) setScores(s.scores); if (s.players) setPlayers(s.players); }
+      if (s) { if (s.scores) setScores(s.scores); if (s.players) setPlayers(s.players); if (s.ctp) setCtp(s.ctp); }
     } catch {}
   }, []);
   useEffect(() => {
-    try { localStorage.setItem("golf26", JSON.stringify({ scores, players })); } catch {}
-  }, [scores, players]);
+    try { localStorage.setItem("golf26", JSON.stringify({ scores, players, ctp })); } catch {}
+  }, [scores, players, ctp]);
 
   const handleLogin = (e) => {
     e.preventDefault();
@@ -48,13 +49,13 @@ export default function App() {
     }
   };
 
-  const allR = useMemo(() => courses.map((c, i) => calcDay(c, players, scores[i] || {})), [courses, players, scores]);
+  const allR = useMemo(() => courses.map((c, i) => calcDay(c, players, scores[i] || {}, ctp[i] || {})), [courses, players, scores, ctp]);
   const board = useMemo(() => {
     const t = {};
-    players.forEach(p => { t[p.name] = { pars:0,birdies:0,eagles:0,skins:0,lowNet:0,total:0,parPts:0,birdiePts:0,eaglePts:0 }; });
+    players.forEach(p => { t[p.name] = { pars:0,birdies:0,eagles:0,skins:0,lowNet:0,ctp:0,total:0,parPts:0,birdiePts:0,eaglePts:0 }; });
     allR.forEach(dr => dr.forEach(r => {
       const x = t[r.player]; if (!x) return;
-      x.pars+=r.pars; x.birdies+=r.birdies; x.eagles+=r.eagles; x.skins+=r.skins; x.lowNet+=r.lowNet;
+      x.pars+=r.pars; x.birdies+=r.birdies; x.eagles+=r.eagles; x.skins+=r.skins; x.lowNet+=r.lowNet; x.ctp+=r.ctp;
       x.parPts+=r.parPts; x.birdiePts+=r.birdiePts; x.eaglePts+=r.eaglePts; x.total+=r.totalPoints;
     }));
     return Object.entries(t).map(([name, d]) => ({ name, ...d })).sort((a, b) => b.total - a.total);
@@ -64,18 +65,26 @@ export default function App() {
     const val = parseInt(v) || 0;
     setScores(prev => {
       const next = { ...prev, [di]: { ...prev[di], [pn]: { ...(prev[di]?.[pn] || {}), [hn]: val } } };
-      if (fbActive) debouncedSync(next, players);
+      if (fbActive) debouncedSync(next, players, ctp);
       return next;
     });
-  }, [debouncedSync, players, fbActive]);
+  }, [debouncedSync, players, fbActive, ctp]);
+
+  const setCtpWinner = useCallback((di, hn, pn) => {
+    setCtp(prev => {
+      const next = { ...prev, [di]: { ...(prev[di] || {}), [hn]: pn } };
+      if (fbActive) debouncedSync(scores, players, next);
+      return next;
+    });
+  }, [debouncedSync, scores, players, fbActive]);
 
   const updatePlayers = useCallback((np) => {
     setPlayers(np);
-    if (fbActive) debouncedSync(scores, np);
-  }, [debouncedSync, scores, fbActive]);
+    if (fbActive) debouncedSync(scores, np, ctp);
+  }, [debouncedSync, scores, fbActive, ctp]);
 
-  const handleExport = () => { const b = new Blob([JSON.stringify({players,scores},null,2)],{type:"application/json"}); const a=document.createElement("a"); a.href=URL.createObjectURL(b); a.download="myrtle-2026.json"; a.click(); };
-  const handleImport = e => { const f=e.target.files[0]; if(!f)return; const r=new FileReader(); r.onload=ev=>{try{const d=JSON.parse(ev.target.result);if(d.players)setPlayers(d.players);if(d.scores)setScores(d.scores);if(fbActive)debouncedSync(d.scores||scores,d.players||players);}catch{alert("Bad JSON")}}; r.readAsText(f); };
+  const handleExport = () => { const b = new Blob([JSON.stringify({players,scores,ctp},null,2)],{type:"application/json"}); const a=document.createElement("a"); a.href=URL.createObjectURL(b); a.download="myrtle-2026.json"; a.click(); };
+  const handleImport = e => { const f=e.target.files[0]; if(!f)return; const r=new FileReader(); r.onload=ev=>{try{const d=JSON.parse(ev.target.result);if(d.players)setPlayers(d.players);if(d.scores)setScores(d.scores);if(d.ctp)setCtp(d.ctp);if(fbActive)debouncedSync(d.scores||scores,d.players||players,d.ctp||ctp);}catch{alert("Bad JSON")}}; r.readAsText(f); };
 
   // ─── STATUS DOT ─────────────────────────────────────────────────────────
   const StatusDot = () => {
@@ -108,7 +117,7 @@ export default function App() {
       </div>
       <div style={{background:C.bg2,border:`1px solid ${C.border}`,borderRadius:"14px",padding:"16px",marginBottom:"14px",overflowX:"auto"}}>
         <table style={{width:"100%",borderCollapse:"collapse"}}>
-          <thead><tr>{["","PAR×1","BIR×2","EAG×4","SKINS","LOW NET","TOTAL"].map((h,i)=><th key={i} style={{padding:"8px 6px",fontSize:"10px",fontWeight:800,textTransform:"uppercase",letterSpacing:"0.08em",color:i===6?C.accent:C.muted,textAlign:i===0?"left":"center",borderBottom:`1px solid ${C.border}`}}>{h}</th>)}</tr></thead>
+          <thead><tr>{["","PAR×1","BIR×2","EAG×4","SKINS","LOW NET","CTP","TOTAL"].map((h,i)=><th key={i} style={{padding:"8px 6px",fontSize:"10px",fontWeight:800,textTransform:"uppercase",letterSpacing:"0.08em",color:i===7?C.accent:C.muted,textAlign:i===0?"left":"center",borderBottom:`1px solid ${C.border}`}}>{h}</th>)}</tr></thead>
           <tbody>{board.map((p,i)=><tr key={p.name} style={{background:i===0?C.accent+"06":"transparent"}}>
             <td style={{padding:"10px 6px",fontWeight:800,fontSize:"14px",whiteSpace:"nowrap"}}><span style={{color:medal[i]||C.muted,marginRight:"8px",fontFamily:"'JetBrains Mono',monospace",fontSize:"12px"}}>{i+1}</span>{p.name}<span style={{fontSize:"11px",color:C.muted,marginLeft:"6px"}}>({players.find(x=>x.name===p.name)?.handicap})</span></td>
             <td style={{textAlign:"center",padding:"8px 4px"}}><span style={bdg(C.par)}>{p.pars}<span style={{opacity:0.5,fontSize:"9px",marginLeft:"2px"}}>={p.parPts}</span></span></td>
@@ -116,6 +125,7 @@ export default function App() {
             <td style={{textAlign:"center",padding:"8px 4px"}}><span style={bdg(C.eagle)}>{p.eagles}<span style={{opacity:0.5,fontSize:"9px",marginLeft:"2px"}}>={p.eaglePts}</span></span></td>
             <td style={{textAlign:"center",padding:"8px 4px"}}><span style={bdg(C.skin)}>{p.skins}</span></td>
             <td style={{textAlign:"center",padding:"8px 4px"}}><span style={bdg(C.gold)}>{p.lowNet}</span></td>
+            <td style={{textAlign:"center",padding:"8px 4px"}}><span style={bdg(C.birdie)}>{p.ctp}</span></td>
             <td style={{textAlign:"center",padding:"8px 4px",fontWeight:900,fontSize:"20px",fontFamily:"'JetBrains Mono',monospace",color:C.accent}}>{p.total}</td>
           </tr>)}</tbody>
         </table>
@@ -201,6 +211,17 @@ export default function App() {
               </div>
             </div>})}
         </div>
+        
+        {/* CTP Selection for Par 3s */}
+        {c.ctpHoles && c.ctpHoles.includes(hole.number) && <div style={{marginTop:"14px",background:"linear-gradient(135deg, "+C.birdie+"15, "+C.accent+"10)",border:`2px solid ${C.birdie}40`,borderRadius:"12px",padding:"14px"}}>
+          <div style={{fontSize:"12px",fontWeight:800,textTransform:"uppercase",letterSpacing:"0.1em",color:C.birdie,marginBottom:"10px",textAlign:"center"}}>🎯 Closest to the Pin</div>
+          <div style={{display:"flex",gap:"8px",justifyContent:"center",flexWrap:"wrap"}}>
+            {players.map(player=>{
+              const isWinner = (ctp[day]||{})[hole.number] === player.name;
+              return <button key={player.name} onClick={()=>setCtpWinner(day,hole.number,isWinner?null:player.name)} style={{background:isWinner?C.birdie:"transparent",border:`2px solid ${isWinner?C.birdie:C.border}`,borderRadius:"8px",padding:"10px 16px",color:isWinner?"#fff":C.text,fontSize:"14px",fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>{player.name}</button>
+            })}
+          </div>
+        </div>}
       </div>
       </> : <>
       {/* Full Scoresheet View - Vertical with Players as Columns */}
@@ -250,7 +271,7 @@ export default function App() {
       <div style={{background:C.bg2,border:`1px solid ${C.border}`,borderRadius:"14px",padding:"14px",marginBottom:"14px",overflowX:"auto"}}>
         <div style={{fontSize:"10px",fontWeight:800,textTransform:"uppercase",letterSpacing:"0.15em",color:C.muted,marginBottom:"10px"}}>Day {day+1} Points</div>
         <table style={{width:"100%",borderCollapse:"collapse"}}><thead><tr>
-          {["","GROSS","NET","PAR×1","BIR×2","EAG×4","SKINS","LOW","PTS"].map((h,i)=><th key={i} style={{padding:"6px 4px",fontSize:"9px",fontWeight:800,textTransform:"uppercase",letterSpacing:"0.05em",color:i===8?C.accent:C.muted,textAlign:i===0?"left":"center",borderBottom:`1px solid ${C.border}`,whiteSpace:"nowrap"}}>{h}</th>)}
+          {["","GROSS","NET","PAR×1","BIR×2","EAG×4","SKINS","LOW","CTP","PTS"].map((h,i)=><th key={i} style={{padding:"6px 4px",fontSize:"9px",fontWeight:800,textTransform:"uppercase",letterSpacing:"0.05em",color:i===9?C.accent:C.muted,textAlign:i===0?"left":"center",borderBottom:`1px solid ${C.border}`,whiteSpace:"nowrap"}}>{h}</th>)}
         </tr></thead><tbody>
           {[...dr].sort((a,b)=>b.totalPoints-a.totalPoints).map((r,i)=><tr key={r.player} style={{background:i===0&&r.totalPoints>0?C.accent+"06":"transparent"}}>
             <td style={{padding:"8px 4px",fontWeight:800,fontSize:"13px"}}>{r.player}</td>
@@ -261,6 +282,7 @@ export default function App() {
             <td style={{padding:"6px 4px",textAlign:"center"}}>{r.eagles>0&&<span style={bdg(C.eagle)}>{r.eagles}</span>}</td>
             <td style={{padding:"6px 4px",textAlign:"center"}}>{r.skins>0&&<span style={bdg(C.skin)}>{r.skins}</span>}</td>
             <td style={{padding:"6px 4px",textAlign:"center"}}>{r.lowNet>0&&<span style={bdg(C.gold)}>{r.lowNet}</span>}</td>
+            <td style={{padding:"6px 4px",textAlign:"center"}}>{r.ctp>0&&<span style={bdg(C.birdie)}>{r.ctp}</span>}</td>
             <td style={{padding:"6px 4px",textAlign:"center",fontWeight:900,fontSize:"18px",fontFamily:"'JetBrains Mono',monospace",color:C.accent}}>{r.totalPoints}</td>
           </tr>)}
         </tbody></table>
