@@ -181,6 +181,17 @@ export default function App() {
           <button onClick={()=>currentHole<17&&setCurrentHole(currentHole+1)} disabled={currentHole===17} style={{background:C.accent,border:"none",borderRadius:"8px",padding:"10px 16px",color:"#fff",fontSize:"14px",fontWeight:700,cursor:"pointer",opacity:currentHole===17?0.3:1}}>Next →</button>
         </div>
         
+        {/* CTP Selection for Par 3s */}
+        {c.ctpHoles && c.ctpHoles.includes(hole.number) && <div style={{marginBottom:"14px",background:"linear-gradient(135deg, "+C.birdie+"15, "+C.accent+"10)",border:`2px solid ${C.birdie}40`,borderRadius:"12px",padding:"14px"}}>
+          <div style={{fontSize:"12px",fontWeight:800,textTransform:"uppercase",letterSpacing:"0.1em",color:C.birdie,marginBottom:"10px",textAlign:"center"}}>🎯 Closest to the Pin</div>
+          <div style={{display:"flex",gap:"8px",justifyContent:"center",flexWrap:"wrap"}}>
+            {players.map(player=>{
+              const isWinner = (ctp[day]||{})[hole.number] === player.name;
+              return <button key={player.name} onClick={()=>setCtpWinner(day,hole.number,isWinner?null:player.name)} style={{background:isWinner?C.birdie:"transparent",border:`2px solid ${isWinner?C.birdie:C.border}`,borderRadius:"8px",padding:"10px 16px",color:isWinner?"#fff":C.text,fontSize:"14px",fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>{player.name}</button>
+            })}
+          </div>
+        </div>}
+        
         {/* Score Entry Cards */}
         <div style={{display:"flex",flexDirection:"column",gap:"10px"}}>
           {players.map(player=>{
@@ -211,17 +222,6 @@ export default function App() {
               </div>
             </div>})}
         </div>
-        
-        {/* CTP Selection for Par 3s */}
-        {c.ctpHoles && c.ctpHoles.includes(hole.number) && <div style={{marginTop:"14px",background:"linear-gradient(135deg, "+C.birdie+"15, "+C.accent+"10)",border:`2px solid ${C.birdie}40`,borderRadius:"12px",padding:"14px"}}>
-          <div style={{fontSize:"12px",fontWeight:800,textTransform:"uppercase",letterSpacing:"0.1em",color:C.birdie,marginBottom:"10px",textAlign:"center"}}>🎯 Closest to the Pin</div>
-          <div style={{display:"flex",gap:"8px",justifyContent:"center",flexWrap:"wrap"}}>
-            {players.map(player=>{
-              const isWinner = (ctp[day]||{})[hole.number] === player.name;
-              return <button key={player.name} onClick={()=>setCtpWinner(day,hole.number,isWinner?null:player.name)} style={{background:isWinner?C.birdie:"transparent",border:`2px solid ${isWinner?C.birdie:C.border}`,borderRadius:"8px",padding:"10px 16px",color:isWinner?"#fff":C.text,fontSize:"14px",fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>{player.name}</button>
-            })}
-          </div>
-        </div>}
       </div>
       </> : <>
       {/* Full Scoresheet View - Vertical with Players as Columns */}
@@ -236,9 +236,10 @@ export default function App() {
           
           {/* Hole Rows */}
           {c.holes.map((hole,hIdx)=>{
+            const isCtp = c.ctpHoles && c.ctpHoles.includes(hole.number);
             return <React.Fragment key={hole.number}>
               <div style={{background:hIdx%2===0?C.bg:C.bg2,padding:"12px 8px",fontSize:"12px",fontWeight:800,color:C.text,borderRight:`1px solid ${C.border}`,borderTop:`1px solid ${C.border}`,display:"flex",flexDirection:"column",justifyContent:"center"}}>
-                <div style={{fontSize:"14px",color:C.accent}}>{hole.number}</div>
+                <div style={{fontSize:"14px",color:C.accent}}>{isCtp&&"🎯 "}{hole.number}</div>
                 <div style={{fontSize:"10px",color:C.dim}}>Par {hole.par}</div>
               </div>
               {players.map(player=>{
