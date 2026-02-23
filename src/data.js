@@ -122,9 +122,9 @@ export function calcDay(course, players, scores, ctpWinners = {}) {
     const nets = R.map(r => r.totalNet);
     const best = Math.min(...nets);
     const ws = R.filter(r => r.totalNet === best);
-    if (ws.length === 1) ws[0].lowNet = 10;
-    else if (ws.length === 2) ws.forEach(w => w.lowNet = 5);
-    else ws.forEach(w => w.lowNet = 3.33);
+    if (ws.length === 1) ws[0].lowNet = 5;
+    else if (ws.length === 2) ws.forEach(w => w.lowNet = 2);
+    else ws.forEach(w => w.lowNet = 1);
   }
 
   // CTP bonus (3 points per win)
