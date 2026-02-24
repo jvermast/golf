@@ -9,8 +9,8 @@ export const COURSES = [
     {number:10,par:4,hcp:10},{number:11,par:4,hcp:2},{number:12,par:3,hcp:8},{number:13,par:5,hcp:16},{number:14,par:4,hcp:6},{number:15,par:4,hcp:14},{number:16,par:5,hcp:18},{number:17,par:3,hcp:12},{number:18,par:4,hcp:4}
   ]},
   { name: "Tuesday - Plantation", day: 3, ctpHoles: [7, 17], par3Holes: [3, 7, 13, 17], holes: [
-    {number:1,par:4,hcp:4},{number:2,par:4,hcp:1},{number:3,par:3,hcp:15},{number:4,par:4,hcp:5},{number:5,par:4,hcp:7},{number:6,par:4,hcp:3},{number:7,par:3,hcp:17},{number:8,par:4,hcp:5},{number:9,par:4,hcp:11},
-    {number:10,par:4,hcp:10},{number:11,par:5,hcp:4},{number:12,par:4,hcp:16},{number:13,par:3,hcp:18},{number:14,par:5,hcp:6},{number:15,par:4,hcp:12},{number:16,par:4,hcp:2},{number:17,par:3,hcp:14},{number:18,par:4,hcp:8}
+    {number:1,par:55,hcp:15},{number:2,par:4,hcp:1},{number:3,par:3,hcp:11},{number:4,par:5,hcp:13},{number:5,par:4,hcp:5},{number:6,par:4,hcp:7},{number:7,par:3,hcp:17},{number:8,par:4,hcp:3},{number:9,par:4,hcp:9},
+    {number:10,par:4,hcp:10},{number:11,par:5,hcp:6},{number:12,par:4,hcp:18},{number:13,par:3,hcp:12},{number:14,par:5,hcp:14},{number:15,par:4,hcp:8},{number:16,par:4,hcp:2},{number:17,par:3,hcp:1},{number:18,par:4,hcp:4}
   ]},
   { name: "Wednesday - Prestwick", day: 4, ctpHoles: [8, 16], par3Holes: [5, 8, 13, 16], holes: [
     {number:1,par:4,hcp:8},{number:2,par:4,hcp:1},{number:3,par:4,hcp:5},{number:4,par:4,hcp:7},{number:5,par:3,hcp:11},{number:6,par:5,hcp:15},{number:7,par:4,hcp:13},{number:8,par:3,hcp:17},{number:9,par:5,hcp:3},
